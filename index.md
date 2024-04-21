@@ -1,6 +1,7 @@
----
+layout: default
 title: Home
-layout: home
+nav_order: 1
+description: "To be updated"
+permalink: /
 ---
-
 some resume stuff 
