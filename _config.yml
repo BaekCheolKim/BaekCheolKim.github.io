@@ -6,7 +6,7 @@ url: https://baekcheolkim.github.io/
 
 repository: BaekCheolKim/BaekCheolKim # for github-metadata
 
-logo: "/assets/images/profileimage.jpg"
+#logo: "/assets/images/profileimage.jpg"
 
 search_enabled: true
 
