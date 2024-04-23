@@ -3,7 +3,7 @@ layout: default
 title: SVD
 parent: Linear Algebra
 grand_parent: Machine Learning
-nav_order: 1
+nav_order: 2
 ---
 
 # Singular Value Decomposition (SVD)
