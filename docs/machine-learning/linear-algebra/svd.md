@@ -2,6 +2,7 @@
 layout: default
 title: SVD
 parent: Linear Algebra
+grand_parent: Machine Learning
 nav_order: 1
 ---
 
