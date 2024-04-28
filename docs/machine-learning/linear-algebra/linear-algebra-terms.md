@@ -11,7 +11,7 @@ nav_order: 1
 ## Key Concepts in Linear Algebra and Their Applications in Machine Learning
 
 ### 1. **Vector Space**
-A vector space is a collection of vectors that can be added together and multiplied by scalars, typically real numbers. This concept is foundational in machine learning, as it forms the setting for many datasets where vectors represent data points.
+A vector space is one of many different spaces that is a collection of objects called vectors. The prime example is n-dimensional Euclidean space, which includes (x,y), (x,y,z), etc. <!--Function Spaces, Polynomial Spaces, and Sequence Spaces are other examples.--> We define vector spaces to provide a standardized framework, similar to Docker/Conda.
 
 ### 2. **Linear Independence**
 Vectors are linearly independent if no vector can be written as a linear combination of the others. This property is essential in machine learning to ensure that datasets have sufficient variation for effective algorithm training.
@@ -42,5 +42,6 @@ Matrix decomposition involves breaking down a matrix into simpler matrices to fa
 ### 10. **Eigenvalues and Eigenvectors**
 Eigenvalues and eigenvectors satisfy the equation Av = λv for a matrix A, where λ represents the eigenvalue, and v represents the eigenvector. These are vital in PCA and understanding system dynamics in machine learning.
 
+### norm ###
 Each concept builds on others, providing a comprehensive framework for understanding linear algebra's application in various fields, including machine learning, where they assist in data analysis, optimization, and model building.
 
