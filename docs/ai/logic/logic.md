@@ -1,9 +1,9 @@
 ---
+title: Logic
 layout: default
-title: KRR
 parent: AI
 nav_order: 1
+has_children: true
 ---
 
-# KRR
-
+# Logic
