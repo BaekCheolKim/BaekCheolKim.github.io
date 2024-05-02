@@ -25,6 +25,9 @@ The span of a set of vectors includes all points obtainable by linearly combinin
 ### 5. **Dimensionality**
 Dimensionality refers to the number of entries in a vector or columns in a dataset. Reducing dimensionality without significant information loss is a common goal in machine learning, helping simplify models and reduce overfitting.
 
+Dimensionality: In machine learning, dimensionality refers to the number of features or variables used to represent a single data point. It describes the inherent complexity of the data itself.
+Multidimensional Arrays: These are data structures used in programming libraries like NumPy to store and manipulate data with multiple dimensions. The number of dimensions in a multidimensional array directly corresponds to the dimensionality of the data it represents.
+
 ### 6. **Rank**
 The rank of a matrix indicates the maximum number of linearly independent column vectors it contains. It is crucial for understanding data structure in machine learning, such as identifying redundant features.
 
