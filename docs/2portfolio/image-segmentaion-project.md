@@ -1,6 +1,7 @@
 ---
 title: Image Segmentation via Spectral Clustering and K-means
 layout: default
+parent: Portfolio
 nav_order: 2
 ---
 
