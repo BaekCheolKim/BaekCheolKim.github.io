@@ -1,10 +1,12 @@
 ---
 title: Pytorch
 layout: default
-parent: Portfolio
+parent: Python
 nav_order: 2
 ---
 
 # Pytorch
 
-# 1
+# NumPy Arrays vs Tensorflow Tensors
+np.array - machine learning while, tensors for deep learning
+
