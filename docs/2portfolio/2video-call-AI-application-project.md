@@ -7,7 +7,7 @@ nav_order: 2
 
 # This is our Video Call AI Application Project affiliated by the ANU Techlauncher
 
-[This is the poster of our project](assets\images\portfolio\poster v2.1.png)
+![Project Poster](assets/images/portfolio/poster-v2.1.png)
 
 # Video Call AI: AI-Driven Real-Time Assistance
 
