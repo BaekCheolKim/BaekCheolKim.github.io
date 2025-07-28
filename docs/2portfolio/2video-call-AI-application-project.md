@@ -10,7 +10,7 @@ nav_order: 2
 
 [About ANU TechLauncher](https://comp.anu.edu.au/TechLauncher/)
 
-![Project Poster](assets/images/portfolio/poster.jpg)
+![Project Poster](./assets/images/portfolio/poster.jpg)
 
 # Video Call AI: AI-Driven Real-Time Assistance
 
@@ -22,7 +22,7 @@ This project was developed in collaboration with **Evolutioned Pty Ltd** and thr
 
 
 
-![Architectural Diagram](assets\images\portfolio\architecture-diagram.jpg)
+![Architectural Diagram](./assets\images\portfolio\architecture-diagram.jpg)
 
 [SoW of this project](https://drive.google.com/file/d/16n2vd1aOY1eGbfnfABO5Is-Y0BlR0hyF/view?usp=drive_link)
 
