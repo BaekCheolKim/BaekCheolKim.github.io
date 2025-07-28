@@ -18,9 +18,13 @@ This project was developed in collaboration with **Evolutioned Pty Ltd** and thr
 
 ## Project Overview
 
-**Video Call AI** is an innovative platform designed to enhance video call experiences by integrating **AI-driven real-time coaching prompts**. The system utilizes advanced **Natural Language Processing (NLP)**, **Machine Learning (ML)**, and **Cloud Technologies** to analyze live conversations and provide actionable coaching advice. The project was developed to address the growing need for remote communication tools that not only facilitate video calls but also enhance the quality of interactions. By leveraging real-time visual and audio analysis, Video Call AI provides users with personalized coaching prompts during conversations, helping them improve communication and decision-making.
+**Video Call AI** is an AI project designed to enhance video call experiences by integrating **AI-driven real-time coaching prompts**. The system utilizes advanced **Natural Language Processing (NLP)**, **Machine Learning (ML)**, and **Cloud Technologies** to analyze live conversations and provide actionable coaching advice. The project was developed to address the growing need for remote communication tools that not only facilitate video calls but also enhance the quality of interactions. By leveraging real-time visual and audio analysis, Video Call AI provides users with personalized coaching prompts during conversations, helping them improve communication and decision-making.
 
-The initiative aligns with Evolutioned Pty Ltd’s mission to combine people science and technology to unlock potential in organizations, teams, and individuals. Through the ANU TechLauncher program, the project provided a platform for students to work on real-world challenges, collaborating with industry professionals to develop a prototype that demonstrates the feasibility of an AI coaching companion for remote calls.
+
+
+![Architectural Diagram](assets\images\portfolio\architecture-diagram.jpg)
+
+[SoW of this project](https://drive.google.com/file/d/16n2vd1aOY1eGbfnfABO5Is-Y0BlR0hyF/view?usp=drive_link)
 
 ## Key Features
 
