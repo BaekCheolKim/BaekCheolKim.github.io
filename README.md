@@ -69,6 +69,8 @@ To change a TIL later, edit the file and push again; the page shows "Updated" wi
 | Colors, fonts, sizes and spacing | `static/site.css`; each section names the part of the page it styles |
 | Text of TILs, case studies, About and CV | the Markdown files listed below |
 | Old addresses that must keep working | `redirects.txt` |
+| The picture shown when a link to the site is shared on LinkedIn, Slack and similar sites | `static/og-image.png`. After changing your name, role or headline in `SITE`, redraw it with `python3 build.py --og-image` (needs Google Chrome) and commit the new PNG |
+| What search engines read about you | `full_name`, `job_title` and `google_site_verification` in `SITE`; `person()` in `build.py` |
 | The build and deploy steps on GitHub | `.github/workflows/pages.yml` |
 
 ### Content files
@@ -89,12 +91,26 @@ To change a TIL later, edit the file and push again; the page shows "Updated" wi
 - **Dates:** created is the file's first commit and updated is its latest commit. Uncommitted files show today's date. Front matter `date:` and `updated:` (YYYY-MM-DD) override git.
 - **Summaries:** the first paragraph is the summary. Front matter `summary:` overrides it.
 - **Case studies:** front matter `period`, `role`, `team`, `stack` and `links` (`Label | URL ; Label | URL`) fill the box at the top of the page. The comments at the top of each `work/*/index.md` repeat this.
-- **Tools:** a tool's `<title>` and `<meta name="description">` give its name and summary. The build puts the site header and footer where the tool has `<!-- site-head -->` and `<!-- site-foot -->`.
+- **Tools:** a tool's `<title>` and `<meta name="description">` give its name and summary. The build puts the site header and footer where the tool has `<!-- site-head -->` and `<!-- site-foot -->`, and adds the canonical link and link-preview tags before `</head>` unless the tool has its own `og:` tags.
 - **Private notes:** HTML comments (`<!-- … -->`) in Markdown are removed before publishing. Use them for reminders to yourself.
 - **Broken links stop the build:** if a page links to a file that does not exist, the build fails and names it.
 - **Standalone pages:** `about.md`, `cv.md` and `glossary.md` each get a header tab when the file exists.
 
 The look is GitHub's: `static/github-markdown.css` is GitHub's stylesheet for Markdown ([github-markdown-css](https://github.com/sindresorhus/github-markdown-css), MIT), and `static/site.css` uses GitHub's colors for the rest of the page.
+
+## Search engines and link previews
+
+Every page has Open Graph tags, so a link shared on LinkedIn or Slack shows the page's title, its summary and `static/og-image.png`. The homepage, About and CV also contain schema.org structured data that names you, lists `full_name` as another name, and links your GitHub and LinkedIn profiles.
+
+To have Google index the site and show you which searches find it:
+
+1. Open [Google Search Console](https://search.google.com/search-console) and add a property of the type **URL prefix**: `https://baekcheolkim.github.io/`.
+2. Choose the **HTML tag** method. Google shows a tag like `<meta name="google-site-verification" content="abc123…">`. Copy only the `content` value.
+3. Paste it into `google_site_verification` in `SITE` in `build.py`, then commit and push.
+4. When the deploy has finished, press **Verify** in Search Console.
+5. Under **Sitemaps**, submit `sitemap.xml`.
+
+LinkedIn stores a link's preview for some time. After you change the title, summary or picture of a page that was already shared, paste its address into [LinkedIn's Post Inspector](https://www.linkedin.com/post-inspector/) to fetch the preview again.
 
 ## Index
 
@@ -102,6 +118,14 @@ The look is GitHub's: `static/github-markdown.css` is GitHub's stylesheet for Ma
 
 <!-- index starts -->
 ### TIL
+
+#### GPU
+
+- [What nvidia-smi's 97,871 MiB means on a GH200](https://baekcheolkim.github.io/til/gpu/nvidia-smi-memory-on-gh200.html) - 2026-11-25
+
+#### LLM
+
+- [Llama 3.1 70B's KV cache is 320 KiB per token, an eighth of what it would be without GQA](https://baekcheolkim.github.io/til/llm/kv-cache-with-gqa.html) - 2026-11-25
 
 #### Markdown
 

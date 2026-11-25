@@ -11,7 +11,7 @@ stack: HTML, CSS and JavaScript; no build step and no libraries
 # links: "Label | URL" pairs separated by ";".
 # When GitHub Pages is on for the AI-Anatomy repository, put this first:
 #   Live page | https://baekcheolkim.github.io/AI-Anatomy/ ;
-links: Repository | https://github.com/BaekCheolKim/AI-Anatomy
+links: Live page | https://baekcheolkim.github.io/AI-Anatomy/ ; Repository | https://github.com/BaekCheolKim/AI-Anatomy
 ---
 
 ## What it answers

@@ -3,6 +3,8 @@
 
     python3 build.py            build _site/ and update the index in README.md
     python3 build.py --serve    build, then serve _site/ at http://localhost:8000/
+    python3 build.py --og-image redraw static/og-image.png, the picture that LinkedIn
+                                and other sites show for a shared link (needs Google Chrome)
 
 Needs Python 3.9 or later and markdown-it-py:
     python3 -m pip install -r requirements.txt
@@ -17,6 +19,7 @@ HOW TO EDIT (README.md has the step-by-step version)
     Header tabs                 build(), where NAV is filled in
     Header and footer HTML      site_head() and site_foot()
     Standalone pages            PAGES (About, CV, Glossary)
+    Link previews, search data  social_tags(), person() and preview_card()
     Colors, fonts, spacing      static/site.css
     Old URLs that must redirect redirects.txt
 Content lives in Markdown files; see the table in README.md.
@@ -29,8 +32,10 @@ import http.server
 import json
 import re
 import shutil
+import struct
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from urllib.parse import unquote, urljoin, urlsplit
 
@@ -64,6 +69,14 @@ SITE = {
     "links": [("GitHub", "https://github.com/BaekCheolKim"),
               ("LinkedIn", "https://www.linkedin.com/in/baekcheolkim/"),
               ("CV", "cv.html")],
+    # Not shown on the pages. Search engines read the first two (see person()),
+    # and LinkedIn, Slack and similar sites show preview_image for a shared link.
+    "full_name": "Baek Cheol Kim",           # listed as another name, so searches for it find the site
+    "job_title": "AI Application Analyst",
+    "preview_image": "static/og-image.png",  # 1200 × 630; redraw with python3 build.py --og-image
+    # The code from Google Search Console's "HTML tag" check, the part inside
+    # content="...". Leave it empty until you set up Search Console (README.md).
+    "google_site_verification": "",
 }
 
 # Standalone Markdown pages at the top of the repository: (tab name, file, page).
@@ -425,13 +438,51 @@ def site_foot(root):
             '</div></footer>') % (SITE["repo"], built, short_date(TODAY), root, SITE["repo"])
 
 
+def social_tags(title, description, url, og_type="website"):
+    """Open Graph tags: the title, text and picture that LinkedIn, Slack and other
+    sites show when someone shares a link to the page. url must be absolute."""
+    tags = ['<meta property="og:type" content="%s">' % og_type,
+            '<meta property="og:site_name" content="%s">' % esc(SITE["name"]),
+            '<meta property="og:title" content="%s">' % esc(title),
+            '<meta property="og:description" content="%s">' % esc(description),
+            '<meta property="og:url" content="%s">' % esc(url)]
+    if (ROOT / SITE["preview_image"]).exists():
+        alt = "%s. %s. %s" % (SITE["name"], SITE["role"], SITE["headline"])
+        tags += ['<meta property="og:image" content="%s">' % esc(SITE["url"] + SITE["preview_image"]),
+                 '<meta property="og:image:width" content="1200">',
+                 '<meta property="og:image:height" content="630">',
+                 '<meta property="og:image:alt" content="%s">' % esc(alt),
+                 '<meta name="twitter:card" content="summary_large_image">']
+    return "\n".join(tags)
+
+
+def person():
+    """Who the site is about, in schema.org terms, for search engines. alternateName
+    lets a search for the full name find a site that shows the short one."""
+    data = {"@type": "Person", "@id": SITE["url"] + "#person", "name": SITE["name"],
+            "url": SITE["url"], "jobTitle": SITE["job_title"],
+            "sameAs": [url for _, url in SITE["links"] if url.startswith("http")]}
+    if SITE["full_name"] and SITE["full_name"] != SITE["name"]:
+        data["alternateName"] = SITE["full_name"]
+    return data
+
+
+def json_ld(data):
+    """A <script> block of structured data. Search engines read it; browsers ignore it."""
+    text = json.dumps(dict({"@context": "https://schema.org"}, **data), ensure_ascii=False)
+    return '<script type="application/ld+json">%s</script>' % text.replace("</", "<\\/")
+
+
 def layout(title, body, root, path, section="", description="", og_type="website",
-           scripts=True):
-    """The HTML document around every page except the tools."""
+           scripts=True, head_extra=""):
+    """The HTML document around every page except the tools. head_extra is added
+    at the end of <head>."""
     full_title = title if title == SITE["name"] else "%s · %s" % (title, SITE["name"])
     canonical = SITE["url"] + path
     description = description or SITE["description"]
     script = '<script src="%sstatic/site.js" defer></script>\n' % root if scripts else ""
+    social = social_tags(title, description, canonical, og_type)
+    extra = head_extra + "\n" if head_extra else ""
     return """<!doctype html>
 <html lang="en">
 <head>
@@ -444,11 +495,8 @@ def layout(title, body, root, path, section="", description="", og_type="website
 <link rel="icon" href="{root}static/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="{root}static/github-markdown.css">
 <link rel="stylesheet" href="{root}static/site.css">
-<meta property="og:type" content="{og_type}">
-<meta property="og:title" content="{og_title}">
-<meta property="og:description" content="{description}">
-<meta property="og:url" content="{canonical}">
-</head>
+{social}
+{extra}</head>
 <body>
 {head}
 <main id="main" class="wrap">
@@ -458,7 +506,7 @@ def layout(title, body, root, path, section="", description="", og_type="website
 {script}</body>
 </html>
 """.format(title=esc(full_title), description=esc(description), canonical=esc(canonical),
-           name=esc(SITE["name"]), root=root, og_type=og_type, og_title=esc(title),
+           name=esc(SITE["name"]), root=root, social=social, extra=extra,
            head=site_head(root, section), body=body, foot=site_foot(root), script=script)
 
 
@@ -658,7 +706,18 @@ def home_page(content, stream):
 </div>""".format(role=esc(SITE["role"]), headline=esc(SITE["headline"]), facts=facts_html,
                  figure=hbm_figure(""), tabs="".join(tabs), months="\n".join(months),
                  older=older, side="\n".join(side))
-    return layout(SITE["name"], body, "", "", "home")
+
+    # For search engines: the site and the person it is about, and the Search
+    # Console code (Google looks for it on the homepage only).
+    head = [json_ld({"@graph": [
+        {"@type": "WebSite", "@id": SITE["url"] + "#website", "url": SITE["url"],
+         "name": SITE["name"], "description": SITE["description"],
+         "author": {"@id": SITE["url"] + "#person"}},
+        person()]})]
+    if SITE["google_site_verification"]:
+        head.append('<meta name="google-site-verification" content="%s">'
+                    % esc(SITE["google_site_verification"]))
+    return layout(SITE["name"], body, "", "", "home", head_extra="\n".join(head))
 
 
 def entry_meta(entry):
@@ -734,7 +793,13 @@ def text_page(entry):
                 'and footer are left out of the printout.</p>')
     body = ('<article class="entry">\n<h1 class="entry-title">%s</h1>\n%s\n'
             '<div class="markdown-body">\n%s</div>\n</article>' % (esc(entry.title), note, entry.body))
-    return layout(entry.label, body, "", entry.url, entry.label, description=entry.summary)
+    # About and CV are pages about you, so search engines are told whose they are.
+    head = ""
+    if entry.url in ("about.html", "cv.html"):
+        head = json_ld({"@type": "ProfilePage", "url": SITE["url"] + entry.url,
+                        "mainEntity": person()})
+    return layout(entry.label, body, "", entry.url, entry.label, description=entry.summary,
+                  head_extra=head)
 
 
 def list_page(title, intro, inner, root, path, section):
@@ -775,8 +840,14 @@ def simple_list(kind, title, intro, entries):
 
 def tool_page(entry):
     """A tool is copied as it is, with the site header and footer put in place of
-    the <!-- site-head --> and <!-- site-foot --> comments."""
+    the <!-- site-head --> and <!-- site-foot --> comments. Its canonical link and
+    link-preview tags are added before </head>, unless the tool has its own."""
     text = entry.src.read_text(encoding="utf-8")
+    if 'property="og:' not in text:
+        url = SITE["url"] + entry.url
+        tags = '<link rel="canonical" href="%s">\n%s\n' % (
+            esc(url), social_tags(entry.title, entry.summary or SITE["description"], url))
+        text = text.replace("</head>", tags + "</head>", 1)
     text = text.replace("<!-- site-head -->", site_head("../", "tool"))
     text = text.replace("<!-- site-foot -->", site_foot("../"))
     return text
@@ -962,6 +1033,75 @@ def check_links(errors):
                 errors.append("%s: broken %s %s" % (page.relative_to(OUT).as_posix(), attr, value))
 
 
+# ---------------------------------------------------------------- link-preview image
+# python3 build.py --og-image draws static/og-image.png from preview_card(): the
+# site's address, your name, role and headline in GitHub's colors. Redraw it after
+# changing those in SITE, then commit the PNG; the build only links to it.
+
+CHROME = ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",   # macOS
+          "google-chrome", "google-chrome-stable", "chromium", "chromium-browser"]
+
+
+def preview_card():
+    """The 1200 × 630 page that becomes static/og-image.png. Sizes are in pixels."""
+    favicon = (ROOT / "static" / "favicon.svg").read_text(encoding="utf-8")
+    return """<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+html, body {{ margin: 0; width: 1200px; height: 630px; overflow: hidden; }}
+body {{
+  box-sizing: border-box; padding: 72px 80px; background: #ffffff; color: #1f2328;
+  border-bottom: 12px solid #0969da;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+}}
+.site {{ display: flex; align-items: center; gap: 16px; font-size: 28px; color: #59636e; }}
+.site svg {{ width: 44px; height: 44px; }}
+h1 {{ margin: 56px 0 0; font-size: 76px; font-weight: 600; line-height: 1.1; }}
+.role {{ margin: 16px 0 0; font-size: 32px; color: #59636e; }}
+.headline {{ margin: 44px 0 0; font-size: 34px; line-height: 1.4; max-width: 1000px; }}
+</style>
+</head>
+<body>
+<div class="site">{favicon}<span>{host}</span></div>
+<h1>{name}</h1>
+<p class="role">{role}</p>
+<p class="headline">{headline}</p>
+</body>
+</html>
+""".format(favicon=favicon, host=esc(urlsplit(SITE["url"]).netloc), name=esc(SITE["name"]),
+           role=esc(SITE["role"]), headline=esc(SITE["headline"]))
+
+
+def find_chrome():
+    for name in CHROME:
+        path = name if Path(name).is_absolute() else shutil.which(name)
+        if path and Path(path).exists():
+            return path
+    return None
+
+
+def make_preview_image():
+    chrome = find_chrome()
+    if not chrome:
+        sys.exit("--og-image needs Google Chrome or Chromium, and neither was found.")
+    target = ROOT / SITE["preview_image"]
+    with tempfile.TemporaryDirectory() as tmp:
+        card = Path(tmp) / "card.html"
+        card.write_text(preview_card(), encoding="utf-8")
+        subprocess.run([chrome, "--headless=new", "--disable-gpu", "--hide-scrollbars",
+                        "--no-first-run", "--no-default-browser-check",
+                        "--user-data-dir=%s" % (Path(tmp) / "profile"),
+                        "--force-device-scale-factor=1", "--window-size=1200,630",
+                        "--screenshot=%s" % target, card.as_uri()],
+                       check=True, capture_output=True, timeout=120)
+    width, height = struct.unpack(">II", target.read_bytes()[16:24])   # from the PNG header
+    print("Wrote %s: %d × %d pixels, %d KB" % (rel(target), width, height, target.stat().st_size // 1024))
+    if (width, height) != (1200, 630):
+        print("Expected 1200 × 630. Link previews may crop or scale it.", file=sys.stderr)
+
+
 # ---------------------------------------------------------------- build
 
 ASSET_DIRS = ("til", "articles", "work")   # their images and PDFs are copied as they are
@@ -1042,6 +1182,9 @@ def serve(port=8000):
 
 
 if __name__ == "__main__":
+    if "--og-image" in sys.argv[1:]:
+        make_preview_image()
+        sys.exit()
     build()
     if "--serve" in sys.argv[1:]:
         serve()
