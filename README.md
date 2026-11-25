@@ -1,15 +1,5 @@
 # baekcheolkim.github.io
 
-Source of [baekcheolkim.github.io](https://baekcheolkim.github.io/): TILs, tools and case studies by Baek C. Kim on how LLM training and inference run on GPU clusters.
-
-One Python script, `build.py`, turns the Markdown and HTML files in this repository into the website in `_site/`. A push to `main` builds the site again on GitHub and publishes it.
-
-## One-time setup
-
-```sh
-python3 -m pip install -r requirements.txt   # installs markdown-it-py, the only dependency
-```
-
 ## Publish a TIL, step by step
 
 A TIL ("today I learned") is one short Markdown file about one thing you checked.
@@ -140,6 +130,10 @@ LinkedIn stores a link's preview for some time. After you change the title, summ
 
 - [Mixed-precision Adam keeps 16 bytes per parameter; Megatron's BF16 default keeps 18](https://baekcheolkim.github.io/til/parallelism/zero-bytes-per-parameter.html) - 2026-11-25
 - [How the five kinds of parallelism fit together](https://baekcheolkim.github.io/til/parallelism/five-kinds-of-parallelism.html) - 2026-11-25
+
+#### Tuning
+
+- [Settings for LLM jobs on GH200 nodes with Slingshot, layer by layer](https://baekcheolkim.github.io/til/tuning/settings-for-gh200-and-slingshot.html) - 2026-11-25
 
 ### Tools
 

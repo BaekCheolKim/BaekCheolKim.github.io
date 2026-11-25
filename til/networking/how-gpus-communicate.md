@@ -43,6 +43,8 @@ If NCCL can't load the plugin, it falls back to its Socket network, and the job 
 
 Containers built from NVIDIA's images bring their own NCCL but not the site's Slingshot libraries. CSCS installs libfabric into the image and loads the plugin with a container hook.
 
+The settings for this stack on a GH200 cluster, with what each one does, are collected in [Settings for LLM jobs on GH200 nodes with Slingshot](../tuning/settings-for-gh200-and-slingshot.md).
+
 ## Collectives and what they cost
 
 | Collective | Each rank ends with | Bytes each rank sends (ring) | nccl-tests factor | Used by |

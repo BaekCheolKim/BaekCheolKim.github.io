@@ -60,3 +60,5 @@ The projects are still moving. On 2026-11-19, Megatron Bridge's README announced
 | The job rejects a layout, for example because TP does not divide the number of attention heads | the parallelism checks in Megatron Core |
 | Out of GPU memory | the layout and the batch ([bytes per parameter](../parallelism/zero-bytes-per-parameter.md), [KV cache](../llm/kv-cache-with-gqa.md)) |
 | A converted checkpoint gives wrong outputs | the checkpoint conversion (Megatron Bridge) |
+
+The environment variables and flags that tune each of these layers on a GH200 cluster are in [Settings for LLM jobs on GH200 nodes with Slingshot](../tuning/settings-for-gh200-and-slingshot.md).
