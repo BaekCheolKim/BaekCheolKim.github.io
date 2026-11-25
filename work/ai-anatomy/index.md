@@ -9,8 +9,6 @@ date: 2026-10-06
 period: September–October 2026
 stack: HTML, CSS and JavaScript; no build step and no libraries
 # links: "Label | URL" pairs separated by ";".
-# When GitHub Pages is on for the AI-Anatomy repository, put this first:
-#   Live page | https://baekcheolkim.github.io/AI-Anatomy/ ;
 links: Live page | https://baekcheolkim.github.io/AI-Anatomy/ ; Repository | https://github.com/BaekCheolKim/AI-Anatomy
 ---
 
@@ -48,13 +46,13 @@ The page also flags a problem with moving this layout to GH200. The paper used n
 
 ![The Parallelism view for DeepSeek-V3 training on 2,048 GPUs: the layout DP 128 × PP 16 with EP 64 on 512 nodes, then the data-parallel card with its reduce-scatter and all-gather collectives, their message sizes, volume per GPU, link and time.](parallelism-deepseek-v3.png "Parallelism view: DeepSeek-V3 pre-training with the layout from its technical report.")
 
-The DeepSeek-V3 report trained on 2,048 GPUs with PP 16, EP 64 and ZeRO-1 data parallelism. The page lists every collective of that layout with its message size, count per step, volume per GPU, link and time. For example, the data-parallel reduce-scatter of the dense parameters' gradients sends 3.95 GiB from each GPU per step. At the 25 GB/s that each GPU gets over Slingshot 11, that takes 170 ms.
+According to its technical report, DeepSeek-V3 was trained on 2,048 GPUs with PP 16, EP 64 and ZeRO-1 data parallelism. The page lists every collective of that layout with its message size, count per step, volume per GPU, link and time. For example, the data-parallel reduce-scatter of the dense parameters' gradients sends 3.95 GiB from each GPU per step. At the 25 GB/s that each GPU gets over Slingshot 11, that takes 170 ms.
 
 ### Data flow: Llama 3.1 70B decode
 
 ![The Data flow view for one decode step of Llama 3.1 70B with TP 4: the controls, the stages from text prompt through tokenizer and token embedding, and a side panel describing the current stage.](dataflow-llama-70b.png "Data flow view: one decode step of Llama 3.1 70B with TP 4 on one node.")
 
-One decode step of Llama 3.1 70B with TP 4 on one 4-GPU node, in 19 stages from the text prompt to the choice of the next token. Prev and Next step through the stages. For each stage, the side panel gives the operation, the tensor shapes for the chosen batch and lengths, where the data resides, and the collectives.
+This view follows one decode step of Llama 3.1 70B with TP 4 on one 4-GPU node, in 19 stages from the text prompt to the choice of the next token. Prev and Next step through the stages. For each stage, the side panel gives the operation, the tensor shapes for the chosen batch and lengths, where the data resides, and the collectives.
 
 ## How the numbers are computed
 
@@ -66,7 +64,7 @@ Every formula is in one file, `calc.js`; no number on the page is typed in by ha
 - **Collective volumes** use ring-algorithm factors: an all-reduce sends 2(n−1)/n of the tensor from each GPU; all-gather, reduce-scatter and all-to-all send (n−1)/n. A group inside one node uses NVLink; a group that spans nodes uses the network.
 - **Prefill and decode time** is max(FLOPs ÷ peak, bytes ÷ HBM bandwidth), which shows whether each phase is compute-bound or bandwidth-bound.
 
-The hardware is the NVIDIA GH200 96GB node of the KISTI-6 "HANGANG" pilot system (HPE Cray EX4000): 4 GPUs per node, 97,871 MiB of usable HBM per GPU, NVLink between the GPUs of a node (450 GB/s per direction per GPU), and Slingshot 11 between nodes (25 GB/s per GPU). Measured values come from the system's hardware specification; the others come from NVIDIA's GH200 datasheet.
+The hardware is the NVIDIA GH200 96GB node of the KISTI-6 "HANGANG" pilot system (HPE Cray EX4000): 4 GPUs per node, 97,871 MiB of HBM per GPU (the total that nvidia-smi reports), NVLink between the GPUs of a node (450 GB/s per direction per GPU), and Slingshot 11 between nodes (25 GB/s per GPU). Measured values come from the system's hardware specification; the others come from NVIDIA's GH200 datasheet.
 
 ## Limits
 

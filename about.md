@@ -1,10 +1,10 @@
 ---
 # The About page, published at /about.html. Edit the text below as plain Markdown.
 title: About
-summary: Baek Cheol Kim works as an AI application analyst in AI and HPC, on how LLM training and inference run on GPU supercomputers.
+summary: Baek Cheol Kim is an AI application analyst in AI and HPC who studies how LLM training and inference run on GPU supercomputers.
 ---
 
-I'm Baek Cheol Kim, an AI application analyst working on AI and HPC. I analyze how LLM training and inference map onto GPU supercomputers: which tensors reside in each GPU's memory, how a model is split across data, tensor, pipeline, expert and context parallelism, and how much each layout sends over NVLink and the network.
+I'm Baek Cheol Kim, an AI application analyst working in AI and HPC. I analyze how LLM training and inference map onto GPU supercomputers: which tensors reside in each GPU's memory, how a model is split across data, tensor, pipeline, expert and context parallelism, and how much each layout sends over NVLink and the network.
 
 My current project is [AI-Anatomy](work/ai-anatomy/index.md). It computes per-GPU memory, data flow and collective volumes for Llama 3.1, Mixtral 8x7B and DeepSeek-V3 on NVIDIA GH200 nodes.
 

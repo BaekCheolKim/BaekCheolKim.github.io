@@ -190,7 +190,7 @@
       var status = over
         ? 'Does not fit: ' + gib(total) + ' GiB needed per GPU, ' + gib(HBM) + ' GiB available.' +
           (w > HBM ? ' Weights alone exceed HBM at TP ' + m.tp + '.' : '')
-        : 'Fits: ' + gib(total) + ' GiB of ' + gib(HBM) + ' GiB per GPU is weights and KV cache.';
+        : 'Fits: weights and KV cache take ' + gib(total) + ' GiB of the ' + gib(HBM) + ' GiB per GPU.';
       var s = $('hbm-status');
       s.textContent = status;
       s.classList.toggle('bad', over);

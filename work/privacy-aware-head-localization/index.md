@@ -4,7 +4,7 @@
 # Every field is optional; lines starting with # are comments.
 # date: the date used to sort this entry in "Latest" (YYYY-MM-DD).
 title: Privacy-aware head localization
-summary: Predicting where people's heads are from images that show only their bodies, so a robot's camera could avoid recording faces. 0.63 precision and 0.71 recall on CrowdHuman.
+summary: A model that predicts where people's heads are from images that show only their bodies, so that a robot's camera could avoid recording faces. It reaches 0.63 precision and 0.71 recall on CrowdHuman.
 date: 2024-11-01
 period: 2024, Australian National University
 team: Four students; names and individual contributions are in the report
@@ -19,7 +19,7 @@ A robot's camera records the faces of the people it passes. Masking faces after 
 
 ## Approach
 
-Predict each person's head box from an image in which only bodies are visible, so that a camera controller could avoid capturing faces:
+The method predicts each person's head box from an image in which only bodies are visible, so that a camera controller could avoid capturing faces:
 
 1. A pre-trained YOLO11 model detects body boxes. Boxes with IoU above 0.5 against the ground truth are kept.
 2. A pre-trained YOLO11-Pose model extracts keypoints from each body crop.

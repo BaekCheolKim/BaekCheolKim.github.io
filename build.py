@@ -57,13 +57,13 @@ SITE = {
     "role": "AI Application Analyst · AI/HPC",      # small line above the headline
     "headline": ("I analyze how LLM training and inference map onto GPU supercomputers: "
                  "memory residency, parallel layouts, collective communication."),
-    "description": ("Baek C. Kim analyzes how LLM training and inference map onto GPU "
-                    "supercomputers. TILs, tools and case studies."),
+    "description": ("TILs, tools and case studies by Baek C. Kim, who analyzes how LLM "
+                    "training and inference map onto GPU supercomputers."),
     # "Featured" on the homepage: (link text, link, text after the link)
     "featured": ("AI-Anatomy", "work/ai-anatomy/index.html",
                  "what each GPU holds, where data moves and what each collective costs, "
                  "for five open LLMs on NVIDIA GH200 nodes"),
-    "education": "M. Machine Learning & Computer Vision, Australian National University, 2023–2025",
+    "education": "Master of Machine Learning and Computer Vision, Australian National University, 2023–2025",
     # "Elsewhere" on the homepage. A link that starts with http opens another site;
     # other links are pages of this site.
     "links": [("GitHub", "https://github.com/BaekCheolKim"),
@@ -102,7 +102,7 @@ TOPIC_WORDS = {"ai": "AI", "api": "API", "cpu": "CPU", "cuda": "CUDA", "gpu": "G
 
 # Fig. 1 on the homepage. static/site.js holds the same numbers for the buttons,
 # so change both together.
-HBM_MIB = 97871                      # usable HBM per GH200 GPU, measured
+HBM_MIB = 97871                      # HBM per GH200 GPU: nvidia-smi's memory.total, measured
 TOKENS = 8 * 8192                    # 8 sequences of 8,192 tokens
 MODELS = [  # key, button label, parameters, layers, KV heads, head dim, TP degree
     ("8b", "8B · TP 1", 8030261248, 32, 8, 128, 1),
@@ -581,7 +581,7 @@ def hbm_figure(root):
         if s["w"] > s["hbm"]:
             status += " Weights alone exceed HBM at TP %d." % s["tp"]
     else:
-        status = ("Fits: %.1f GiB of %.1f GiB per GPU is weights and KV cache."
+        status = ("Fits: weights and KV cache take %.1f GiB of the %.1f GiB per GPU."
                   % (s["total"] / gib, s["hbm"] / gib))
     return """<figure class="fig Box" id="hbm">
 <div class="fig-head Box-header">
@@ -605,9 +605,9 @@ def hbm_figure(root):
 <p class="status{bad}" id="hbm-status">{status}</p>
 </div>
 <figcaption class="fig-caption">Llama 3.1 with BF16 weights and KV cache for 8 sequences of 8,192 tokens,
-split across tensor-parallel (TP) ranks, on one NVIDIA GH200 with 97,871 MiB of usable HBM.
-Activations, workspace and the CUDA context are not counted. Formulas from
-<a href="{root}work/ai-anatomy/index.html">AI-Anatomy</a>.</figcaption>
+split across tensor-parallel (TP) ranks, on one NVIDIA GH200 with 97,871 MiB of HBM
+(the total that nvidia-smi reports). Activations, workspace and the CUDA context are not counted.
+The formulas come from <a href="{root}work/ai-anatomy/index.html">AI-Anatomy</a>.</figcaption>
 </figure>""".format(
         buttons=buttons, w=pct(s["w"]), kv=pct(s["kv"]), cap=pct(s["hbm"]),
         ow=pct(max(0, s["total"] - s["hbm"])), over_hidden="" if over else " hidden",

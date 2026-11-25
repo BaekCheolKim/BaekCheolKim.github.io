@@ -119,17 +119,27 @@ LinkedIn stores a link's preview for some time. After you change the title, summ
 <!-- index starts -->
 ### TIL
 
+#### Frameworks
+
+- [PyTorch, Megatron Core and NeMo: what each layer of the training stack does](https://baekcheolkim.github.io/til/frameworks/pytorch-megatron-nemo.html) - 2026-11-25
+
 #### GPU
 
 - [What nvidia-smi's 97,871 MiB means on a GH200](https://baekcheolkim.github.io/til/gpu/nvidia-smi-memory-on-gh200.html) - 2026-11-25
 
 #### LLM
 
-- [Llama 3.1 70B's KV cache is 320 KiB per token, an eighth of what it would be without GQA](https://baekcheolkim.github.io/til/llm/kv-cache-with-gqa.html) - 2026-11-25
+- [How large the KV cache is, and how GQA and tensor parallelism divide it](https://baekcheolkim.github.io/til/llm/kv-cache-with-gqa.html) - 2026-11-25
+- [Batching alone does not make LLM decode compute-bound on a GH200](https://baekcheolkim.github.io/til/llm/decode-stays-memory-bound.html) - 2026-11-25
 
-#### Markdown
+#### Networking
 
-- [A PDF in Markdown image syntax renders as a broken image](https://baekcheolkim.github.io/til/markdown/pdf-in-image-syntax.html) - 2026-11-25
+- [How GPUs communicate: NVLink, NICs, libfabric and NCCL](https://baekcheolkim.github.io/til/networking/how-gpus-communicate.html) - 2026-11-25
+
+#### Parallelism
+
+- [Mixed-precision Adam keeps 16 bytes per parameter; Megatron's BF16 default keeps 18](https://baekcheolkim.github.io/til/parallelism/zero-bytes-per-parameter.html) - 2026-11-25
+- [How the five kinds of parallelism fit together](https://baekcheolkim.github.io/til/parallelism/five-kinds-of-parallelism.html) - 2026-11-25
 
 ### Tools
 

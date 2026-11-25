@@ -16,18 +16,18 @@ I analyze how LLM training and inference map onto GPU clusters: memory residency
 
 ## Experience
 
-**AI Application Analyst (AI/HPC)** · KISTI Supercomputing center, Daejeon, South Korea · Sep 2026 – present
+**AI Application Analyst (AI/HPC)** · KISTI Supercomputing Center, Daejeon, South Korea · Sep 2026 – present
 
 - Model per-GPU memory residency for LLM training and inference.
 - Evaluate parallel layouts (data/ZeRO/FSDP, tensor, pipeline, expert and context parallelism) for multi-node GPU clusters.
 - Estimate collective-communication volume between GPUs and nodes to inform layout choices.
 
-**Network Engineer (Data center)** · Jun 2026 - Aug 2026, At KT cloud at Seoul, South Korea
+**Network Engineer (Data Center)** · KT Cloud, Seoul, South Korea · Jun 2026 – Aug 2026
 
-- Configuring and managing.
-- Monitoring and troubleshooting.
-- Cabling.
-- Customer support.
+- Configured and managed the data-center network.
+- Monitored the network and troubleshot faults.
+- Installed cabling.
+- Provided customer support.
 
 ## Projects
 
@@ -43,15 +43,15 @@ I analyze how LLM training and inference map onto GPU clusters: memory residency
 
 **[Video Call AI](work/video-call-ai/index.md)** · ANU TechLauncher, with Evolutioned Pty Ltd
 
-- Prototype that generates coaching prompts from live call captions: a TypeScript and Node.js call app on Azure Communication Services and a Flask service on Azure OpenAI. Team of seven.
+- Worked in a team of seven on a prototype that generates coaching prompts from live call captions: a TypeScript and Node.js call app on Azure Communication Services and a Flask service on Azure OpenAI.
 
 <!-- Add your own part of the Video Call AI work. -->
 
 ## Education
 
-**Master of Machine Learning and Computer Vision**, Australian National University · February 2023 – February 2025
+**Master of Machine Learning and Computer Vision**, Australian National University · Feb 2023 – Feb 2025
 
-- ANU+ Award for contributions to leadership and community engagement.
+- ANU+ Award for leadership and community engagement.
 
 <!-- Add earlier degrees here. -->
 
