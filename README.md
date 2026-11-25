@@ -1,6 +1,6 @@
 # baekcheolkim.github.io
 
-Source of [baekcheolkim.github.io](https://baekcheolkim.github.io/): TILs, tools and case studies by Baek Cheol Kim on how LLM training and inference run on GPU supercomputers.
+Source of [baekcheolkim.github.io](https://baekcheolkim.github.io/): TILs, tools and case studies by Baek C. Kim on how LLM training and inference run on GPU clusters.
 
 One Python script, `build.py`, turns the Markdown and HTML files in this repository into the website in `_site/`. A push to `main` builds the site again on GitHub and publishes it.
 

@@ -46,13 +46,13 @@ OUT = ROOT / "_site"
 # ---------------------------------------------------------------- settings
 # Text that appears on the homepage and in every page's header and metadata.
 SITE = {
-    "name": "Baek Cheol Kim",                       # header, page titles, feeds
+    "name": "Baek C. Kim",                       # header, page titles, feeds
     "url": "https://baekcheolkim.github.io/",       # used for feed and canonical links
     "repo": "https://github.com/BaekCheolKim/BaekCheolKim.github.io",
     "role": "AI Application Analyst · AI/HPC",      # small line above the headline
     "headline": ("I analyze how LLM training and inference map onto GPU supercomputers: "
                  "memory residency, parallel layouts, collective communication."),
-    "description": ("Baek Cheol Kim analyzes how LLM training and inference map onto GPU "
+    "description": ("Baek C. Kim analyzes how LLM training and inference map onto GPU "
                     "supercomputers. TILs, tools and case studies."),
     # "Featured" on the homepage: (link text, link, text after the link)
     "featured": ("AI-Anatomy", "work/ai-anatomy/index.html",

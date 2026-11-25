@@ -2,24 +2,35 @@
 # The CV page, published at /cv.html.
 # To make a PDF, open the page in a browser and print it; the site header,
 # footer and this note are left out of the printout.
-# The line "# Baek Cheol Kim" below is the title at the top of the page.
-summary: CV of Baek Cheol Kim, AI Application Analyst (AI/HPC).
+# The line "# Baek C. Kim" below is the title at the top of the page.
+summary: CV of me, AI Application Analyst (AI/HPC).
 ---
 
-# Baek Cheol Kim
+# Baek C. Kim
 
 AI Application Analyst (AI/HPC) · [baekcheolkim.github.io](https://baekcheolkim.github.io/) · [github.com/BaekCheolKim](https://github.com/BaekCheolKim) · [LinkedIn](https://www.linkedin.com/in/baekcheolkim/)
 
 <!-- Add an email address and your city to the line above if you want them on the CV. -->
 
-I analyze how LLM training and inference map onto GPU supercomputers: memory residency, parallel layouts and collective communication.
+I analyze how LLM training and inference map onto GPU clusters: memory residency, parallel layouts and collective communication.
 
 ## Experience
 
 **AI Application Analyst (AI/HPC)**
-
+At 'KISTI supercomouting center at Daejeon, South Korea' Sep 2026 - present
+Analysing how large-language-model training and inference map onto GPU clusters.
+• Model per-GPU memory residency for LLM training and inference
+• Evaluate parallel layouts (data/ZeRO/FSDP, tensor, pipeline, expert and context parallelism) for multi-node GPU clusters
+• Estimate collective-communication volume between GPUs and nodes to inform layout choices
 <!-- Add the employer, city and dates ("Month YYYY – present"), then two to four bullets
      with what you did and what changed because of it, with numbers where you have them. -->
+
+**Network Engineer (Data center)**
+At 'KT cloud at Seoul, South Korea' Jun 2026 - Aug 2026
+-Configuring and managing
+-Monitoring and troubleshooting
+-Cabling
+-Customer support
 
 ## Projects
 
