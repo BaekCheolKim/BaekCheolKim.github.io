@@ -1,0 +1,34 @@
+# Old URL (from the 2024 Jekyll site)                                   New URL
+# build.py writes a small page at each old path that sends the browser to the new URL.
+# Encode spaces as %20. The course notes were removed, so their old URLs go to the homepage.
+
+/docs/2portfolio.html                                                    /work/
+/docs/2portfolio/2video-call-AI-application-project.html                 /work/video-call-ai/
+/docs/2portfolio/3Privacy-Aware-Perception-System-for-Robotics.html      /work/privacy-aware-head-localization/
+
+/docs/robotics.html                                                      /
+/docs/python.html                                                        /
+/docs/ai.html                                                            /
+/docs/ai/logic/krr.html                                                  /
+/docs/machine-learning/linear-algebra/svd.html                           /
+/docs/machine-learning/linear-algebra/linear-algebra-terms.html          /
+/docs/algorithms/search/2.informed-search-algorithms.html                /
+/docs/machine-learning/statistics/probability.html                       /
+
+/docs/algorithm.html                                                     /
+/docs/calculus.html                                                      /
+/docs/computer-vision.html                                               /
+/docs/data-structure.html                                                /
+/docs/deep-learning.html                                                 /
+/docs/machine-learning.html                                              /
+/docs/ai/logic/logic.html                                                /
+/docs/algorithms/search/1.search.html                                    /
+/docs/algorithms/search/1.3.uniformed-search-strategies.html             /
+/docs/algorithms/search/3.adversarial-search.html                        /
+/docs/algorithms/sort/sort.html                                          /
+/docs/machine-learning/linear-algebra/linear-algebra.html                /
+/docs/machine-learning/statistics/statistics.html                        /
+/docs/machine-learning/Dimensionality%20Reduction/dimensionality-reduction.html  /
+/docs/machine-learning/Dimensionality%20Reduction/pca.html               /
+/docs/python/basic/basic.html                                            /
+/docs/python/pytorch.html                                                /

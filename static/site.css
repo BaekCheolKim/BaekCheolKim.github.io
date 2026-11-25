@@ -1,0 +1,578 @@
+/* =========================================================================
+   site.css: the look of baekcheolkim.github.io, in GitHub's style.
+
+   Two stylesheets style every page:
+     github-markdown.css  GitHub's own stylesheet for rendered Markdown. It
+                          styles the text of TILs, case studies, About and CV
+                          (everything inside <div class="markdown-body">).
+     site.css (this file) the page frame (header, footer), the homepage, the
+                          list pages and the tools.
+
+   How to edit:
+   - Colors: the "Colors" section below holds every color, for light mode and
+     for dark mode. The values are GitHub's (Primer). github-markdown.css uses
+     the same variables, so a change here also applies to Markdown pages.
+   - Fonts: --font-sans and --font-mono. Both use the fonts already installed
+     on the reader's device, as GitHub does; the site downloads no fonts.
+   - Widths: --width-page (homepage and lists) and --width-text (pages of text).
+   - Every later section starts with a comment naming the part of the site it
+     styles and the function in build.py that writes that HTML.
+   ========================================================================= */
+
+
+/* ---------- Colors and fonts ----------------------------------------------
+   Three blocks. The first is light mode. The second and third are dark mode
+   and must stay identical: the second follows the reader's system setting,
+   the third applies when a page sets <html data-theme="dark">.            */
+
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --width-page: 1080px;
+  --width-text: 880px;
+
+  /* GitHub (Primer) light colors */
+  --focus-outlineColor: #0969da;
+  --fgColor-default: #1f2328;      /* text */
+  --fgColor-muted: #59636e;        /* dates, labels, captions */
+  --fgColor-accent: #0969da;       /* links */
+  --fgColor-success: #1a7f37;
+  --fgColor-attention: #9a6700;
+  --fgColor-danger: #d1242f;       /* errors; "does not fit" */
+  --fgColor-done: #8250df;
+  --bgColor-default: #ffffff;      /* page */
+  --bgColor-muted: #f6f8fa;        /* header, box headers, code */
+  --bgColor-neutral-muted: #818b981f;
+  --bgColor-accent-muted: #ddf4ff;
+  --bgColor-attention-muted: #fff8c5;
+  --borderColor-default: #d1d9e0;
+  --borderColor-muted: #d1d9e0b3;
+  --borderColor-neutral-muted: #d1d9e0b3;
+  --borderColor-accent-emphasis: #0969da;
+  --borderColor-success-emphasis: #1a7f37;
+  --borderColor-attention-emphasis: #9a6700;
+  --borderColor-danger-emphasis: #cf222e;
+  --borderColor-done-emphasis: #8250df;
+  --underlineNav-borderColor-active: #fd8c73;   /* line under the current tab */
+  --button-bgColor-rest: #f6f8fa;
+  --button-bgColor-hover: #eff2f5;
+  --button-borderColor: #d1d9e0;
+
+  /* Charts: Fig. 1 on the homepage and the pipeline tool */
+  --chart-1: #0969da;     /* model weights; backward passes */
+  --chart-2: #80ccff;     /* KV cache; forward passes */
+  --on-chart-1: #ffffff;  /* text on --chart-1 */
+  --on-chart-2: #1f2328;  /* text on --chart-2 */
+  --grid: #eff2f5;        /* chart grid lines */
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --focus-outlineColor: #1f6feb;
+    --fgColor-default: #f0f6fc;
+    --fgColor-muted: #9198a1;
+    --fgColor-accent: #4493f8;
+    --fgColor-success: #3fb950;
+    --fgColor-attention: #d29922;
+    --fgColor-danger: #f85149;
+    --fgColor-done: #ab7df8;
+    --bgColor-default: #0d1117;
+    --bgColor-muted: #151b23;
+    --bgColor-neutral-muted: #656c7633;
+    --bgColor-accent-muted: #388bfd1a;
+    --bgColor-attention-muted: #bb800926;
+    --borderColor-default: #3d444d;
+    --borderColor-muted: #3d444db3;
+    --borderColor-neutral-muted: #3d444db3;
+    --borderColor-accent-emphasis: #1f6feb;
+    --borderColor-success-emphasis: #238636;
+    --borderColor-attention-emphasis: #9e6a03;
+    --borderColor-danger-emphasis: #da3633;
+    --borderColor-done-emphasis: #8957e5;
+    --underlineNav-borderColor-active: #f78166;
+    --button-bgColor-rest: #212830;
+    --button-bgColor-hover: #262c36;
+    --button-borderColor: #3d444d;
+    --chart-1: #4493f8;
+    --chart-2: #1158c7;
+    --on-chart-1: #0d1117;
+    --on-chart-2: #f0f6fc;
+    --grid: #1d232b;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --focus-outlineColor: #1f6feb;
+  --fgColor-default: #f0f6fc;
+  --fgColor-muted: #9198a1;
+  --fgColor-accent: #4493f8;
+  --fgColor-success: #3fb950;
+  --fgColor-attention: #d29922;
+  --fgColor-danger: #f85149;
+  --fgColor-done: #ab7df8;
+  --bgColor-default: #0d1117;
+  --bgColor-muted: #151b23;
+  --bgColor-neutral-muted: #656c7633;
+  --bgColor-accent-muted: #388bfd1a;
+  --bgColor-attention-muted: #bb800926;
+  --borderColor-default: #3d444d;
+  --borderColor-muted: #3d444db3;
+  --borderColor-neutral-muted: #3d444db3;
+  --borderColor-accent-emphasis: #1f6feb;
+  --borderColor-success-emphasis: #238636;
+  --borderColor-attention-emphasis: #9e6a03;
+  --borderColor-danger-emphasis: #da3633;
+  --borderColor-done-emphasis: #8957e5;
+  --underlineNav-borderColor-active: #f78166;
+  --button-bgColor-rest: #212830;
+  --button-bgColor-hover: #262c36;
+  --button-borderColor: #3d444d;
+  --chart-1: #4493f8;
+  --chart-2: #1158c7;
+  --on-chart-1: #0d1117;
+  --on-chart-2: #f0f6fc;
+  --grid: #1d232b;
+  color-scheme: dark;
+}
+
+
+/* ---------- Base: whole page ---------------------------------------------- */
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bgColor-default);
+  color: var(--fgColor-default);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+}
+a { color: var(--fgColor-accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+:focus-visible { outline: 2px solid var(--focus-outlineColor); outline-offset: 2px; }
+img, svg { max-width: 100%; }
+code, kbd, pre { font-family: var(--font-mono); }
+[hidden] { display: none !important; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.skip {
+  position: absolute; z-index: 10; top: -40px;
+  left: max(16px, env(safe-area-inset-left, 0px));
+  padding: 6px 12px; background: var(--bgColor-default);
+  border: 1px solid var(--borderColor-default); border-radius: 6px;
+}
+.skip:focus { top: 8px; }
+
+/* Page width and side margins. Every section of the page sits in a .wrap. */
+.wrap {
+  width: 100%;
+  max-width: var(--width-page);
+  margin-inline: auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+@media (min-width: 768px) {
+  .wrap {
+    padding-left: max(24px, env(safe-area-inset-left, 0px));
+    padding-right: max(24px, env(safe-area-inset-right, 0px));
+  }
+}
+main.wrap { padding-block: 32px 0; }
+
+
+/* ---------- Small GitHub components used on several pages ----------------- */
+
+/* Counter: the number in a gray bubble after a tab name */
+.Counter {
+  display: inline-block;
+  min-width: 20px;
+  margin-left: 4px;
+  padding: 0 6px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  text-align: center;
+  color: var(--fgColor-default);
+  background: var(--bgColor-neutral-muted);
+  border: 1px solid transparent;
+  border-radius: 2em;
+}
+/* Label: the outlined type tag (TIL, Tool, Work, Article) */
+.Label {
+  display: inline-block;
+  padding: 0 7px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  white-space: nowrap;
+  color: var(--fgColor-muted);
+  border: 1px solid var(--borderColor-default);
+  border-radius: 2em;
+}
+.Label--til { color: var(--fgColor-accent); border-color: var(--borderColor-accent-emphasis); }
+.Label--article { color: var(--fgColor-done); border-color: var(--borderColor-done-emphasis); }
+.Label--tool { color: var(--fgColor-success); border-color: var(--borderColor-success-emphasis); }
+.Label--work { color: var(--fgColor-attention); border-color: var(--borderColor-attention-emphasis); }
+/* Box: a bordered panel; .Box-header is its gray title bar */
+.Box { background: var(--bgColor-default); border: 1px solid var(--borderColor-default); border-radius: 6px; }
+.Box-header {
+  padding: 12px 16px;
+  background: var(--bgColor-muted);
+  border-bottom: 1px solid var(--borderColor-default);
+  border-radius: 6px 6px 0 0;
+}
+
+
+/* ---------- Header: name, search, feed, then the section tabs --------------
+   HTML: site_head() in build.py. The tabs are the list NAV in build.py.     */
+
+.site-head { background: var(--bgColor-muted); border-bottom: 1px solid var(--borderColor-default); }
+.head-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding-top: 16px; }
+.wordmark { margin-right: auto; color: var(--fgColor-default); font-size: 20px; font-weight: 600; }
+.head-aux { display: flex; gap: 16px; font-size: 14px; }
+.head-aux a { color: var(--fgColor-muted); }
+.nav {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.nav a {
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  line-height: 46px;
+  white-space: nowrap;
+  color: var(--fgColor-default);
+  font-size: 14px;
+  border-bottom: 2px solid transparent;
+}
+.nav a:hover { text-decoration: none; border-bottom-color: var(--borderColor-neutral-muted); }
+.nav a[aria-current] { font-weight: 600; border-bottom-color: var(--underlineNav-borderColor-active); }
+@media (max-width: 544px) {
+  .nav { gap: 0; }
+  .nav a { padding: 0 6px; }
+}
+
+
+/* ---------- Footer ---------------------------------------------------------
+   HTML: site_foot() in build.py.                                           */
+
+.site-foot { margin-top: 64px; border-top: 1px solid var(--borderColor-muted); }
+.site-foot .wrap {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 24px;
+  padding-block: 24px 40px;
+  color: var(--fgColor-muted);
+  font-size: 12px;
+}
+.site-foot p { margin: 0; }
+
+
+/* ---------- Homepage: introduction -----------------------------------------
+   HTML: home_page() in build.py. Text comes from SITE in build.py.        */
+
+.role { margin: 0; color: var(--fgColor-muted); font-size: 14px; }
+.headline {
+  margin: 4px 0 0;
+  max-width: 820px;
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1.3;
+}
+.facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 4px 16px;
+  margin: 20px 0 0;
+  max-width: 820px;
+  font-size: 14px;
+}
+.facts > div { display: contents; }
+.facts dt { color: var(--fgColor-muted); }
+.facts dd { margin: 0; min-width: 0; }
+@media (max-width: 544px) {
+  .headline { font-size: 22px; }
+  .facts { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .facts dd { margin-bottom: 8px; }
+}
+
+
+/* ---------- Figures: Fig. 1 on the homepage, and the pipeline tool's chart --
+   HTML: hbm_figure() in build.py; the numbers change in static/site.js.   */
+
+.fig { margin: 32px 0 0; }
+.fig-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.fig-title { margin: 0; font-size: 14px; font-weight: 600; }
+.fig-no { margin-right: 8px; color: var(--fgColor-muted); font-weight: 400; }
+.fig-body { padding: 16px; }
+.fig-caption { margin: 12px 0 0; max-width: 760px; color: var(--fgColor-muted); font-size: 12px; }
+.fig > .fig-caption { margin: 0; padding: 0 16px 16px; }
+
+/* Segmented control: the model buttons above Fig. 1 */
+.seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  padding: 2px;
+  background: var(--bgColor-neutral-muted);
+  border-radius: 6px;
+}
+.seg button {
+  margin: 0;
+  padding: 3px 12px;
+  font: inherit;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--fgColor-default);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.seg button[aria-pressed="true"] {
+  font-weight: 600;
+  background: var(--bgColor-default);
+  border-color: var(--borderColor-default);
+}
+
+/* The HBM bar: weights, KV cache, capacity line and overflow */
+.plot { position: relative; padding-top: 24px; }
+.hbm-track {
+  position: relative;
+  display: flex;
+  height: 28px;
+  background: var(--bgColor-muted);
+  box-shadow: inset 0 0 0 1px var(--borderColor-default);
+}
+.hbm-w { background: var(--chart-1); }
+.hbm-kv { background: var(--chart-2); }
+.hbm-over {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  background: repeating-linear-gradient(135deg, var(--fgColor-danger) 0 2px, transparent 2px 7px);
+}
+.hbm-cap { position: absolute; top: -24px; bottom: -6px; width: 0; border-left: 2px solid var(--fgColor-default); }
+.hbm-cap span { position: absolute; top: 0; left: 6px; white-space: nowrap; font-size: 12px; line-height: 16px; }
+.hbm-cap.flip span { left: auto; right: 6px; }
+.axis { position: relative; height: 18px; margin-top: 8px; color: var(--fgColor-muted); font-size: 12px; }
+.axis span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+.axis span:first-child { transform: none; }
+.axis .unit { right: 0; left: auto !important; transform: none; }
+
+/* Readout: label and value pairs under a chart */
+.readout { display: flex; flex-wrap: wrap; gap: 12px 32px; margin: 16px 0 0; }
+.readout div { min-width: 96px; }
+.readout dt { display: flex; align-items: center; gap: 6px; color: var(--fgColor-muted); font-size: 12px; }
+.readout dd { margin: 0; font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.readout dd small { margin-left: 3px; color: var(--fgColor-muted); font-size: 12px; font-weight: 400; }
+.key { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+.key-w { background: var(--chart-1); }
+.key-kv { background: var(--chart-2); }
+.key-free { box-shadow: inset 0 0 0 1px var(--fgColor-muted); }
+.key-over { background: repeating-linear-gradient(135deg, var(--fgColor-danger) 0 2px, transparent 2px 4px); box-shadow: inset 0 0 0 1px var(--fgColor-danger); }
+.status { margin: 12px 0 0; font-size: 14px; }
+.status.bad { color: var(--fgColor-danger); }
+
+
+/* ---------- Homepage: "Latest" and the side column --------------------------
+   HTML: home_page() and row() in build.py. Filters and search: site.js.   */
+
+.home-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 256px;
+  gap: 32px 40px;
+  margin-top: 40px;
+  align-items: start;
+}
+@media (max-width: 900px) { .home-cols { grid-template-columns: minmax(0, 1fr); } }
+.stream { min-width: 0; }
+
+.latest-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--borderColor-muted);
+}
+.latest-head h2 { margin: 0 8px 0 0; font-size: 20px; font-weight: 600; }
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; }
+.tabs button {
+  margin: 0;
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--fgColor-default);
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.tabs button:hover { background: var(--bgColor-neutral-muted); }
+.tabs button[aria-pressed="true"] { font-weight: 600; box-shadow: inset 0 -2px 0 var(--underlineNav-borderColor-active); border-radius: 0; }
+.search { position: relative; display: flex; align-items: center; margin-left: auto; flex: 0 1 240px; }
+.search input {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 4px 32px 4px 12px;
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--fgColor-default);
+  background: var(--bgColor-default);
+  border: 1px solid var(--borderColor-default);
+  border-radius: 6px;
+}
+.search input::placeholder { color: var(--fgColor-muted); }
+.search input:focus { outline: 2px solid var(--focus-outlineColor); outline-offset: -1px; border-color: var(--borderColor-accent-emphasis); }
+.search kbd {
+  position: absolute;
+  right: 8px;
+  padding: 0 5px;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--fgColor-muted);
+  border: 1px solid var(--borderColor-default);
+  border-radius: 6px;
+}
+.search input:focus + kbd { display: none; }
+@media (max-width: 544px) { .search { margin-left: 0; flex-basis: 100%; } }
+
+/* One month of entries: a gray heading, then a bordered list */
+.month h3 { margin: 20px 0 8px; color: var(--fgColor-muted); font-size: 14px; font-weight: 400; }
+.rows { list-style: none; margin: 0; padding: 0; }
+.month .rows, #results, .group .rows, .more .rows { border: 1px solid var(--borderColor-default); border-radius: 6px; }
+#results { margin-top: 16px; }
+
+/* One entry: date, type label, title, and one line below the title */
+.row {
+  display: grid;
+  grid-template-columns: 52px 64px minmax(0, 1fr);
+  gap: 0 12px;
+  align-items: baseline;
+  padding: 10px 16px;
+  border-top: 1px solid var(--borderColor-muted);
+}
+.row:first-child, .row.first { border-top: 0; }
+.row:hover { background: var(--bgColor-muted); }
+.row time { color: var(--fgColor-muted); font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.row .Label { justify-self: start; }
+.row .what { min-width: 0; }
+.row .t { color: var(--fgColor-default); font-weight: 600; }
+.row .t:hover { color: var(--fgColor-accent); }
+.row .meta { margin: 2px 0 0; color: var(--fgColor-muted); font-size: 12px; }
+.rows.no-kind .row { grid-template-columns: 96px minmax(0, 1fr); }
+@media (max-width: 544px) {
+  .row { grid-template-columns: auto minmax(0, 1fr); gap: 2px 8px; }
+  .row .what { grid-column: 1 / -1; }
+}
+.empty { margin: 16px 0 0; color: var(--fgColor-muted); font-size: 14px; }
+
+/* Side column, like a GitHub repository's sidebar */
+.side { min-width: 0; font-size: 14px; }
+.side section { padding: 16px 0; border-top: 1px solid var(--borderColor-muted); }
+.side section:first-child { padding-top: 0; border-top: 0; }
+.side h2 { margin: 0 0 8px; font-size: 16px; font-weight: 600; }
+.side ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.side li { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.side p { margin: 0; color: var(--fgColor-muted); }
+.side li > span:not(.Counter) { color: var(--fgColor-muted); }
+
+
+/* ---------- Pages of text: TIL, article, case study, About, CV -------------
+   HTML: til_page(), work_page(), text_page() in build.py. The text itself is
+   styled by github-markdown.css; these rules place it on the page.        */
+
+.entry { max-width: var(--width-text); }
+.crumbs { margin: 0 0 8px; color: var(--fgColor-muted); font-size: 14px; }
+.entry-title { margin: 0; font-size: 32px; font-weight: 400; line-height: 1.25; }
+.entry-meta {
+  margin: 8px 0 0;
+  padding-bottom: 16px;
+  color: var(--fgColor-muted);
+  font-size: 14px;
+  border-bottom: 1px solid var(--borderColor-muted);
+}
+.lede { margin: 8px 0 0; color: var(--fgColor-muted); font-size: 16px; }
+.entry .markdown-body { margin-top: 24px; background: transparent; }
+.markdown-body figure { margin: 0 0 16px; }
+.markdown-body figure img { border: 1px solid var(--borderColor-default); border-radius: 6px; }
+.markdown-body figcaption { margin-top: 4px; color: var(--fgColor-muted); font-size: 14px; }
+
+/* Case-study summary box: period, role, team, stack, links */
+.spec {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  margin: 16px 0 0;
+  font-size: 14px;
+  border: 1px solid var(--borderColor-default);
+  border-radius: 6px;
+}
+.spec > div { display: contents; }
+.spec dt, .spec dd { margin: 0; padding: 8px 16px; border-top: 1px solid var(--borderColor-muted); }
+.spec > div:first-child dt, .spec > div:first-child dd { border-top: 0; }
+.spec dt { color: var(--fgColor-muted); background: var(--bgColor-muted); }
+.spec > div:first-child dt { border-top-left-radius: 6px; }
+.spec > div:last-child dt { border-bottom-left-radius: 6px; }
+.spec dd { min-width: 0; }
+
+/* "More in <topic>" under a TIL */
+.more { margin-top: 40px; }
+.more h2 { margin: 0 0 8px; font-size: 16px; font-weight: 600; }
+
+/* Text under the CV title that disappears when printed */
+.print-note { margin: 8px 0 0; color: var(--fgColor-muted); font-size: 12px; }
+
+
+/* ---------- List pages: TIL, Tools, Work, Articles --------------------------
+   HTML: til_pages() and simple_list() in build.py.                        */
+
+.list-title { margin: 0; font-size: 32px; font-weight: 400; line-height: 1.25; }
+.list-intro { margin: 8px 0 0; max-width: 760px; color: var(--fgColor-muted); }
+.group { margin-top: 24px; max-width: var(--width-text); }
+.group h2 { display: flex; align-items: center; margin: 0 0 8px; font-size: 16px; font-weight: 600; }
+
+
+/* ---------- Printing (used for the CV) --------------------------------------
+   Print a page, or save it as PDF, without the header, footer or dates, in
+   black on white.                                                          */
+
+@media print {
+  :root:not([data-theme="print"]), :root[data-theme] {
+    --fgColor-default: #000000;
+    --fgColor-muted: #444444;
+    --fgColor-accent: #000000;
+    --bgColor-default: #ffffff;
+    --bgColor-muted: #ffffff;
+    --borderColor-default: #bbbbbb;
+    --borderColor-muted: #dddddd;
+    color-scheme: light;
+  }
+  .site-head, .site-foot, .skip, .crumbs, .entry-meta, .print-note { display: none !important; }
+  main.wrap { max-width: none; padding: 0; }
+  .entry { max-width: none; }
+  .entry .markdown-body { margin-top: 12px; font-size: 10.5pt; }
+  .markdown-body a { text-decoration: none; }
+  .markdown-body h2 { break-after: avoid; }
+  .markdown-body li, .markdown-body tr { break-inside: avoid; }
+  @page { margin: 14mm 16mm; }
+}

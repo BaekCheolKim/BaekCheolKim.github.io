@@ -1,179 +1,119 @@
-[https://baekcheolkim.github.io/](https://baekcheolkim.github.io/)
+# baekcheolkim.github.io
 
+Source of [baekcheolkim.github.io](https://baekcheolkim.github.io/): TILs, tools and case studies by Baek Cheol Kim on how LLM training and inference run on GPU supercomputers.
 
-<!--
-# just-the-docs-template
+One Python script, `build.py`, turns the Markdown and HTML files in this repository into the website in `_site/`. A push to `main` builds the site again on GitHub and publishes it.
 
-This is a *bare-minimum* template to create a [Jekyll] site that:
+## One-time setup
 
-- uses the [Just the Docs] theme;
-- can be built and published on [GitHub Pages];
-- can be built and previewed locally, and published on other platforms.
+```sh
+python3 -m pip install -r requirements.txt   # installs markdown-it-py, the only dependency
+```
 
-More specifically, the created site:
+## Publish a TIL, step by step
 
-- uses a gem-based approach, i.e. uses a `Gemfile` and loads the `just-the-docs` gem;
-- uses the [GitHub Pages / Actions workflow] to build and publish the site on GitHub Pages.
+A TIL ("today I learned") is one short Markdown file about one thing you checked.
 
-To get started with creating a site, simply:
+1. **Pick a topic folder.** TILs live in `til/<topic>/`, for example `til/nccl/` or `til/pytorch/`. Use an existing folder or create a new one. The folder name becomes the topic name on the site: lower case, words joined by hyphens (`kv-cache` becomes "KV cache").
 
-1. click "[use this template]" to create a GitHub repository
-2. go to Settings > Pages > Build and deployment > Source, and select GitHub Actions
+2. **Create the file.** Name it after the content, in lower case with hyphens: `til/nccl/ring-all-reduce-volume.md`. The file name becomes the page address: `/til/nccl/ring-all-reduce-volume.html`.
 
-If you want to maintain your docs in the `docs` directory of an existing project repo, see [Hosting your docs from an existing project repo](#hosting-your-docs-from-an-existing-project-repo).
+3. **Write it.** The first line is the title. The first paragraph becomes the summary on lists, in feeds and in search, so make it say the finding.
 
-After completing the creation of your new site on GitHub, update it as needed:
+   ````markdown
+   # Ring all-reduce sends 2(n−1)/n of the tensor from each GPU
 
-## Replace the content of the template pages
+   With n GPUs, a ring all-reduce is a reduce-scatter followed by an all-gather.
+   Each phase sends (n−1)/n of the tensor from every GPU, so the total is 2(n−1)/n.
 
-Update the following files to your own content:
+   ```python
+   n = 8
+   print(2 * (n - 1) / n)  # 1.75
+   ```
 
-- `index.md` (your new home page)
-- `README.md` (information for those who access your site repo on GitHub)
+   Source: ...
+   ````
 
-## Changing the version of the theme and/or Jekyll
+   Images go in the same folder, linked as `![What the image shows](figure.png)`. A link to another page uses that page's Markdown file, for example `[AI-Anatomy](../../work/ai-anatomy/index.md)`; it works on GitHub and on the site.
 
-Simply edit the relevant line(s) in the `Gemfile`.
+4. **Preview it.**
 
-## Adding a plugin
+   ```sh
+   python3 build.py --serve
+   ```
 
-The Just the Docs theme automatically includes the [`jekyll-seo-tag`] plugin.
+   Open http://localhost:8000/. The TIL is at the top of "Latest" on the homepage, dated today. If the build prints `Build failed`, fix the files it names (usually a link or image path that does not exist) and run the command again. Stop the preview with Ctrl+C.
 
-To add an extra plugin, you need to add it in the `Gemfile` *and* in `_config.yml`. For example, to add [`jekyll-default-layout`]:
+5. **Commit and push.**
 
-- Add the following to your site's `Gemfile`:
+   ```sh
+   git add til/nccl/ring-all-reduce-volume.md README.md
+   git commit -m "TIL: ring all-reduce volume"
+   git push
+   ```
 
-  ```ruby
-  gem "jekyll-default-layout"
-  ```
+   `build.py` also rewrites the index at the bottom of this README, which is why `README.md` is in the commit.
 
-- And add the following to your site's `_config.yml`:
+6. **Check the result.** The push starts the "Build and deploy" workflow (the Actions tab on GitHub). It takes about a minute. The TIL then appears on the homepage, on the TIL page, in the topic page and in both Atom feeds. Its date comes from the commit.
 
-  ```yaml
-  plugins:
-    - jekyll-default-layout
-  ```
+To change a TIL later, edit the file and push again; the page shows "Updated" with the date of the latest commit.
 
-Note: If you are using a Jekyll version less than 3.5.0, use the `gems` key instead of `plugins`.
+## Where to edit what
 
-## Publishing your site on GitHub Pages
+| To change | Edit |
+|---|---|
+| Your name, headline, role line, education and "Elsewhere" links on the homepage | `SITE` near the top of `build.py` |
+| The order or content of homepage sections | `home_page()` in `build.py` |
+| Fig. 1 on the homepage | `MODELS`, `HBM_MIB` and `TOKENS` in `build.py`, and the same constants in `static/site.js` |
+| Header tabs | `build()` in `build.py`, where `NAV` is filled in; standalone pages in `PAGES` |
+| Colors, fonts, sizes and spacing | `static/site.css`; each section names the part of the page it styles |
+| Text of TILs, case studies, About and CV | the Markdown files listed below |
+| Old addresses that must keep working | `redirects.txt` |
+| The build and deploy steps on GitHub | `.github/workflows/pages.yml` |
 
-1.  If your created site is `YOUR-USERNAME/YOUR-SITE-NAME`, update `_config.yml` to:
+### Content files
 
-    ```yaml
-    title: YOUR TITLE
-    description: YOUR DESCRIPTION
-    theme: just-the-docs
+| Content | Source file | Published at |
+|---|---|---|
+| TIL | `til/<topic>/<slug>.md` | `/til/<topic>/<slug>.html` |
+| Article | `articles/<slug>.md` | `/articles/<slug>.html` |
+| Case study | `work/<slug>/index.md`, with its images and PDFs in the same folder | `/work/<slug>/` |
+| Tool | `tools/<slug>.html`, one self-contained page | `/tools/<slug>.html` |
+| About | `about.md` | `/about.html` |
+| CV | `cv.md` | `/cv.html` |
+| Glossary (when you add it) | `glossary.md` | `/glossary.html` |
 
-    url: https://YOUR-USERNAME.github.io/YOUR-SITE-NAME
+### Rules the build follows
 
-    aux_links: # remove if you don't want this link to appear on your pages
-      Template Repository: https://github.com/YOUR-USERNAME/YOUR-SITE-NAME
-    ```
+- **Titles:** the first line of a Markdown file is its title (`# Title`). Front matter is optional: lines between two `---` lines at the top, each `key: value`; lines starting with `#` there are comments.
+- **Dates:** created is the file's first commit and updated is its latest commit. Uncommitted files show today's date. Front matter `date:` and `updated:` (YYYY-MM-DD) override git.
+- **Summaries:** the first paragraph is the summary. Front matter `summary:` overrides it.
+- **Case studies:** front matter `period`, `role`, `team`, `stack` and `links` (`Label | URL ; Label | URL`) fill the box at the top of the page. The comments at the top of each `work/*/index.md` repeat this.
+- **Tools:** a tool's `<title>` and `<meta name="description">` give its name and summary. The build puts the site header and footer where the tool has `<!-- site-head -->` and `<!-- site-foot -->`.
+- **Private notes:** HTML comments (`<!-- … -->`) in Markdown are removed before publishing. Use them for reminders to yourself.
+- **Broken links stop the build:** if a page links to a file that does not exist, the build fails and names it.
+- **Standalone pages:** `about.md`, `cv.md` and `glossary.md` each get a header tab when the file exists.
 
-2.  Push your updated `_config.yml` to your site on GitHub.
+The look is GitHub's: `static/github-markdown.css` is GitHub's stylesheet for Markdown ([github-markdown-css](https://github.com/sindresorhus/github-markdown-css), MIT), and `static/site.css` uses GitHub's colors for the rest of the page.
 
-3.  In your newly created repo on GitHub:
-    - go to the `Settings` tab -> `Pages` -> `Build and deployment`, then select `Source`: `GitHub Actions`.
-    - if there were any failed Actions, go to the `Actions` tab and click on `Re-run jobs`.
+## Index
 
-## Building and previewing your site locally
+`build.py` rewrites this section.
 
-Assuming [Jekyll] and [Bundler] are installed on your computer:
+<!-- index starts -->
+### TIL
 
-1.  Change your working directory to the root directory of your site.
+#### Markdown
 
-2.  Run `bundle install`.
+- [A PDF in Markdown image syntax renders as a broken image](https://baekcheolkim.github.io/til/markdown/pdf-in-image-syntax.html) - 2026-11-25
 
-3.  Run `bundle exec jekyll serve` to build your site and preview it at `localhost:4000`.
+### Tools
 
-    The built site is stored in the directory `_site`.
+- [Pipeline schedule](https://baekcheolkim.github.io/tools/pipeline-schedule.html) - 2026-11-25
 
-## Publishing your built site on a different platform
+### Case studies
 
-Just upload all the files in the directory `_site`.
-
-## Customization
-
-You're free to customize sites that you create with this template, however you like!
-
-[Browse our documentation][Just the Docs] to learn more about how to use this theme.
-
-## Hosting your docs from an existing project repo
-
-You might want to maintain your docs in an existing project repo. Instead of creating a new repo using the [just-the-docs template](https://github.com/just-the-docs/just-the-docs-template), you can copy the template files into your existing repo and configure the template's Github Actions workflow to build from a `docs` directory. You can clone the template to your local machine or download the `.zip` file to access the files.
-
-### Copy the template files
-
-1.  Create a `.github/workflows` directory at your project root if your repo doesn't already have one. Copy the `pages.yml` file into this directory. GitHub Actions searches this directory for workflow files.
-
-2.  Create a `docs` directory at your project root and copy all remaining template files into this directory.
-
-### Modify the GitHub Actions workflow
-
-The GitHub Actions workflow that builds and deploys your site to Github Pages is defined by the `pages.yml` file. You'll need to edit this file to that so that your build and deploy steps look to your `docs` directory, rather than the project root.
-
-1.  Set the default `working-directory` param for the build job.
-
-    ```yaml
-    build:
-      runs-on: ubuntu-latest
-      defaults:
-        run:
-          working-directory: docs
-    ```
-
-2.  Set the `working-directory` param for the Setup Ruby step.
-
-    ```yaml
-    - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.1'
-          bundler-cache: true
-          cache-version: 0
-          working-directory: '${{ github.workspace }}/docs'
-    ```
-
-3.  Set the path param for the Upload artifact step:
-
-    ```yaml
-    - name: Upload artifact
-        uses: actions/upload-pages-artifact@v1
-        with:
-          path: "docs/_site/"
-    ```
-
-4.  Modify the trigger so that only changes within the `docs` directory start the workflow. Otherwise, every change to your project (even those that don't affect the docs) would trigger a new site build and deploy.
-
-    ```yaml
-    on:
-      push:
-        branches:
-          - "main"
-        paths:
-          - "docs/**"
-    ```
-
-## Licensing and Attribution
-
-This repository is licensed under the [MIT License]. You are generally free to reuse or extend upon this code as you see fit; just include the original copy of the license (which is preserved when you "make a template"). While it's not necessary, we'd love to hear from you if you do use this template, and how we can improve it for future use!
-
-The deployment GitHub Actions workflow is heavily based on GitHub's mixed-party [starter workflows]. A copy of their MIT License is available in [actions/starter-workflows].
-
-----
-
-[^1]: [It can take up to 10 minutes for changes to your site to publish after you push the changes to GitHub](https://docs.github.com/en/pages/setting-up-a-github-pages-site-with-jekyll/creating-a-github-pages-site-with-jekyll#creating-your-site).
-
-[Jekyll]: https://jekyllrb.com
-[Just the Docs]: https://just-the-docs.github.io/just-the-docs/
-[GitHub Pages]: https://docs.github.com/en/pages
-[GitHub Pages / Actions workflow]: https://github.blog/changelog/2022-07-27-github-pages-custom-github-actions-workflows-beta/
-[Bundler]: https://bundler.io
-[use this template]: https://github.com/just-the-docs/just-the-docs-template/generate
-[`jekyll-default-layout`]: https://github.com/benbalter/jekyll-default-layout
-[`jekyll-seo-tag`]: https://jekyll.github.io/jekyll-seo-tag
-[MIT License]: https://en.wikipedia.org/wiki/MIT_License
-[starter workflows]: https://github.com/actions/starter-workflows/blob/main/pages/jekyll.yml
-[actions/starter-workflows]: https://github.com/actions/starter-workflows/blob/main/LICENSE
--->
+- [AI-Anatomy](https://baekcheolkim.github.io/work/ai-anatomy/) - 2026-10-06
+- [Video Call AI](https://baekcheolkim.github.io/work/video-call-ai/) - 2025-01-27
+- [Privacy-aware head localization](https://baekcheolkim.github.io/work/privacy-aware-head-localization/) - 2024-11-01
+<!-- index ends -->

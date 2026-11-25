@@ -1,0 +1,753 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pipeline schedule · Baek Cheol Kim</title>
+<meta name="description" content="Simulates one pipeline-parallel training step for GPipe, 1F1B or a custom order, and computes the step time, the idle share and the peak number of stored micro-batches per stage.">
+<link rel="icon" href="../static/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../static/github-markdown.css">
+<link rel="stylesheet" href="../static/site.css">
+<style>
+/* Pipeline schedule: layout of this tool only.
+   Colors and fonts come from ../static/site.css (variables such as
+   --fgColor-default), so this block defines no colors of its own.
+   To change the chart colors, edit --chart-1 (backward passes) and --chart-2
+   (forward passes) in site.css; they also color Fig. 1 on the homepage.
+   Page order: results, the stage × time chart, the comparison table, then the
+   spec editor beside its format reference. */
+.tool { display: grid; gap: 32px; }
+.tool > * { min-width: 0; }
+.tool p { margin: 0; }
+.tool code { padding: 0.2em 0.4em; font-size: 85%; background: var(--bgColor-neutral-muted); border-radius: 6px; }
+.tool .lede { max-width: 760px; }
+
+/* Section headings, like a heading in a GitHub README */
+.sh { margin: 0 0 12px; padding-bottom: 8px; font-size: 20px; font-weight: 600; line-height: 1.25; border-bottom: 1px solid var(--borderColor-muted); }
+.tool h3 { margin: 0; font-size: 16px; font-weight: 600; }
+
+/* Results */
+.tool .readout { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px 24px; margin: 0; }
+.tool .readout div { min-width: 0; }
+.tool .readout dd { font-size: 24px; overflow-wrap: anywhere; }
+.tool .readout dd.sub { margin-top: 4px; color: var(--fgColor-muted); font-size: 12px; font-weight: 400; }
+@media (max-width: 760px) { .tool .readout { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Buttons, as on GitHub */
+.btn, .preset {
+  margin: 0;
+  font: inherit;
+  font-weight: 500;
+  color: var(--fgColor-default);
+  background: var(--button-bgColor-rest);
+  border: 1px solid var(--button-borderColor);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.btn { padding: 5px 16px; font-size: 14px; line-height: 20px; }
+.preset { padding: 3px 12px; font-size: 12px; line-height: 20px; }
+.btn:hover, .preset:hover { background: var(--button-bgColor-hover); }
+.btn.primary { min-width: 80px; font-weight: 600; }
+.btn[aria-pressed="true"] { color: var(--fgColor-accent); background: var(--bgColor-accent-muted); border-color: var(--borderColor-accent-emphasis); }
+
+/* Chart panel */
+.tool .fig { margin: 0; }
+.clock { color: var(--fgColor-muted); font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.transport { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 16px 16px 0; }
+.speed { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-left: 8px; color: var(--fgColor-muted); font-size: 14px; }
+.speed input { width: 128px; margin: 0; accent-color: var(--fgColor-accent); }
+.speed output { min-width: 88px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.gridbox { margin: 12px 16px 0; overflow-x: auto; }
+.board.stale .gridbox { opacity: 0.35; }
+#grid { display: block; }
+#grid text { font-family: var(--font-sans); pointer-events: none; }
+.g-grid { stroke: var(--grid); stroke-width: 1; }
+.g-lbl { fill: var(--fgColor-muted); font-size: 12px; }
+.g-idle-ln { stroke: var(--borderColor-default); stroke-width: 1.5; }
+.g-F { fill: var(--chart-2); }
+.g-B { fill: var(--chart-1); }
+.g-tF { fill: var(--on-chart-2); font-size: 12px; font-weight: 600; }
+.g-tB { fill: var(--on-chart-1); font-size: 12px; font-weight: 600; }
+.g-axis { stroke: var(--borderColor-default); stroke-width: 1; }
+.g-tick { fill: var(--fgColor-muted); font-size: 11px; }
+.g-ph { stroke: var(--fgColor-danger); stroke-width: 2; }
+#grid rect.on { stroke: var(--fgColor-default); stroke-width: 2; }
+.legend {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 24px;
+  margin: 0;
+  padding: 12px 16px 16px;
+  color: var(--fgColor-muted);
+  font-size: 12px;
+}
+.legend li { display: flex; align-items: center; gap: 6px; }
+.legend .note { flex-basis: 100%; max-width: 760px; }
+.key-f { background: var(--chart-2); }
+.key-b { background: var(--chart-1); }
+.key-idle { box-shadow: inset 0 0 0 1px var(--borderColor-default); background: repeating-linear-gradient(45deg, transparent 0 3px, var(--borderColor-default) 3px 4.5px); }
+
+/* Tables, like tables in a GitHub README */
+.tool .table { margin: 0; overflow-x: auto; }
+.data { width: 100%; border-collapse: collapse; font-size: 14px; }
+.data th, .data td { padding: 6px 13px; text-align: left; vertical-align: top; border: 1px solid var(--borderColor-default); }
+.data thead th { font-weight: 600; white-space: nowrap; }
+.data tbody tr:nth-child(2n) { background: var(--bgColor-muted); }
+.data tbody th { font-weight: 600; white-space: nowrap; }
+.data .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.data tr.cur td { font-weight: 600; }
+.cur-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 7px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  color: var(--fgColor-accent);
+  border: 1px solid var(--borderColor-accent-emphasis);
+  border-radius: 2em;
+}
+@media (max-width: 560px) {
+  .data th, .data td { padding: 6px 8px; }
+  .data thead th, .data thead th.num { white-space: normal; }
+  .cur-tag { margin: 4px 0 0; }
+}
+#insight { margin-top: 12px; max-width: 760px; }
+
+/* Spec editor and format reference */
+.edit { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 32px; align-items: start; }
+.edit > * { min-width: 0; }
+@media (max-width: 900px) { .edit { grid-template-columns: minmax(0, 1fr); } }
+.presets { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+textarea#spec {
+  display: block;
+  width: 100%;
+  min-height: 300px;
+  margin: 0;
+  padding: 8px 12px;
+  resize: vertical;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--fgColor-default);
+  background: var(--bgColor-muted);
+  border: 1px solid var(--borderColor-default);
+  border-radius: 6px;
+  white-space: pre;
+  overflow: auto;
+  tab-size: 4;
+}
+textarea#spec:focus { outline: 2px solid var(--focus-outlineColor); outline-offset: -1px; border-color: var(--borderColor-accent-emphasis); }
+.msgs { display: grid; gap: 4px; margin-top: 8px; font-size: 14px; }
+.msgs .ok { color: var(--fgColor-success); }
+.msgs .err { color: var(--fgColor-danger); }
+.msgs .err-line { all: unset; cursor: pointer; color: var(--fgColor-danger); }
+.msgs .err-line:hover { text-decoration: underline; }
+.msgs .err-line:focus-visible { outline: 2px solid var(--focus-outlineColor); outline-offset: 2px; }
+.msgs b { color: var(--fgColor-default); font-weight: 600; }
+.ref { font-size: 14px; }
+.ref .data td:first-child { white-space: nowrap; }
+.ref h3 { margin-top: 16px; }
+.ref ul { display: grid; gap: 4px; margin: 8px 0 0; padding-left: 2em; }
+
+/* "Write a custom schedule with an LLM" */
+details.prompt { border: 1px solid var(--borderColor-default); border-radius: 6px; }
+details.prompt summary { padding: 12px 16px; font-size: 14px; font-weight: 600; background: var(--bgColor-muted); border-radius: 6px; cursor: pointer; }
+details.prompt[open] summary { border-bottom: 1px solid var(--borderColor-default); border-radius: 6px 6px 0 0; }
+.prompt-body { display: grid; gap: 12px; padding: 16px; }
+.prompt-body > p { max-width: 760px; }
+.prompt-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+#copy-status { color: var(--fgColor-muted); font-size: 12px; }
+pre#prompt-text {
+  margin: 0;
+  max-height: 460px;
+  padding: 16px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--fgColor-default);
+  background: var(--bgColor-muted);
+  border-radius: 6px;
+}
+
+.notes { max-width: 760px; color: var(--fgColor-muted); font-size: 14px; }
+.notes .sh { color: var(--fgColor-default); }
+</style>
+</head>
+<body>
+<!-- site-head -->
+<main class="wrap tool">
+  <header>
+    <p class="crumbs"><a href="index.html">Tools</a></p>
+    <h1 class="entry-title">Pipeline schedule</h1>
+    <p class="lede">One training step with pipeline parallelism. Each row is a pipeline stage on one GPU, and each block is the forward (F) or backward (B) pass of one micro-batch on that stage, labeled with the micro-batch index. Hatched time is idle. Edit the spec below to change the schedule.</p>
+  </header>
+
+  <dl class="readout" aria-label="Results for the current spec">
+    <div><dt>Step time</dt><dd id="s-T">33</dd><dd class="sub" id="s-T-sub">time units; each stage is busy for 24</dd></div>
+    <div><dt>Idle share</dt><dd id="s-idle">27.3%</dd><dd class="sub" id="s-idle-sub">(p−1)/(m+p−1) = 27.3%</dd></div>
+    <div><dt>Bubble ÷ busy</dt><dd id="s-bub">37.5%</dd><dd class="sub" id="s-bub-sub">(p−1)/m = 37.5%, the ratio Megatron-LM reports</dd></div>
+    <div><dt>Peak stored micro-batches</dt><dd id="s-peak">4 · 3 · 2 · 1</dd><dd class="sub">per stage, 0 to p−1, from the start of F to the end of B</dd></div>
+  </dl>
+
+  <section class="board fig Box" id="board" aria-labelledby="board-h">
+    <div class="fig-head Box-header">
+      <h2 class="fig-title" id="board-h"><span class="fig-no">Fig. 1</span>Stage × time</h2>
+      <span class="clock" id="clock">t = 0 / 33</span>
+    </div>
+    <div class="transport">
+      <button class="btn primary" id="play" type="button">Play</button>
+      <button class="btn" id="restart" type="button">Restart</button>
+      <button class="btn" id="sound" type="button" aria-pressed="false">Sound: off</button>
+      <label class="speed" for="speed"><span class="lbl">Speed</span> <input id="speed" type="range" min="40" max="400" step="10" value="140"><output id="speed-v" for="speed">140 ms/unit</output></label>
+    </div>
+    <div class="gridbox" id="gridbox"><svg id="grid" role="img" aria-label="Stage by time chart of forward and backward passes"></svg></div>
+    <ul class="legend">
+      <li><i class="key key-f"></i>Forward pass (F)</li>
+      <li><i class="key key-b"></i>Backward pass (B)</li>
+      <li><i class="key key-idle"></i>Idle</li>
+      <li class="note">With Sound on, each stage has its own pitch. F plays a short note, B a note an octave lower for the length of the block. Idle time is silent. Space starts and pauses playback.</li>
+    </ul>
+  </section>
+
+  <section class="compare" aria-labelledby="cmp-h">
+    <h2 class="sh" id="cmp-h">Both built-in schedules with the same settings</h2>
+    <div class="table">
+      <table class="data">
+        <thead><tr><th>Schedule</th><th class="num">Step time</th><th class="num">Idle share</th><th class="num">Peak stored, stage 0 to p−1</th></tr></thead>
+        <tbody id="cmp-body">
+          <tr><th scope="row">GPipe</th><td class="num">33</td><td class="num">27.3%</td><td class="num">8 · 8 · 8 · 8</td></tr>
+          <tr class="cur"><th scope="row">1F1B <span class="cur-tag">current</span></th><td class="num">33</td><td class="num">27.3%</td><td class="num">4 · 3 · 2 · 1</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p id="insight">With these settings GPipe and 1F1B take the same step time, 33 units, and leave the same idle share, 27.3%. They differ in memory: GPipe stores activations for all 8 micro-batches on every stage, while 1F1B stores at most 4 on stage 0 and 1 on stage 3.</p>
+  </section>
+
+  <section class="edit">
+    <div>
+      <h2 class="sh" id="spec-h">Spec</h2>
+      <div class="presets" id="presets" role="group" aria-label="Load an example spec"></div>
+      <textarea id="spec" spellcheck="false" autocapitalize="off" autocomplete="off" aria-labelledby="spec-h"></textarea>
+      <div class="msgs" id="msgs" role="status" aria-live="polite"></div>
+    </div>
+    <div class="ref">
+      <h2 class="sh">Format</h2>
+      <div class="table">
+        <table class="data">
+          <thead><tr><th>Line</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>stages 4</code></td><td>Pipeline stages p, 1 to 32. One stage per GPU.</td></tr>
+            <tr><td><code>microbatches 8</code></td><td>Micro-batches per training step m, 1 to 128.</td></tr>
+            <tr><td><code>schedule gpipe</code></td><td>Every stage runs F0 … F(m−1), then B0 … B(m−1).</td></tr>
+            <tr><td><code>schedule 1f1b</code></td><td>Stage s runs min(p−s−1, m) forwards, then alternates F and B, then runs the remaining backwards.</td></tr>
+            <tr><td><code>schedule custom</code></td><td>Each stage runs the ops on its <code>order</code> line.</td></tr>
+            <tr><td><code>forward 1</code><br><code>backward 2</code></td><td>Duration of one pass on one stage, in time units.</td></tr>
+            <tr><td><code>order 0: F0 F1 B0 …</code></td><td>The ops stage 0 runs, in order. List every F and B once.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>Rules</h3>
+      <ul>
+        <li>F<i>i</i> on stage s starts after F<i>i</i> ends on stage s−1.</li>
+        <li>B<i>i</i> on stage s starts after B<i>i</i> ends on stage s+1.</li>
+        <li>On the last stage, B<i>i</i> starts after F<i>i</i> ends there.</li>
+        <li>A stage runs one pass at a time, in its listed order.</li>
+        <li>If no stage can start its next pass, the spec deadlocks, and the page lists what each stage waits for.</li>
+      </ul>
+    </div>
+  </section>
+
+  <details class="prompt">
+    <summary>Write a custom schedule with an LLM</summary>
+    <div class="prompt-body">
+      <p>This prompt teaches an LLM the spec format. Replace the TASK line, paste the prompt into a chat, then paste the reply into the spec box. If the page reports an error or a deadlock, paste that message back to the LLM.</p>
+      <div class="prompt-bar"><button class="btn" id="copy" type="button">Copy prompt</button><span id="copy-status"></span></div>
+<pre id="prompt-text" tabindex="0">You write input for a pipeline-parallel schedule simulator.
+
+FORMAT (one setting per line; text after # is a comment)
+stages N          pipeline stages p, 1 to 32
+microbatches N    micro-batches per training step m, 1 to 128
+schedule custom   take each stage's order from the order lines
+forward T         time for one forward pass on one stage
+backward T        time for one backward pass on one stage
+order s: OPS      the ops stage s runs, in this order (stages are 0-based)
+
+OPS are F&lt;i&gt; and B&lt;i&gt;, where i is the micro-batch index (0-based).
+Each order line lists F0 to F(m-1) and B0 to B(m-1) exactly once.
+Write one order line for every stage.
+
+RULES
+- F&lt;i&gt; on stage s starts after F&lt;i&gt; ends on stage s-1.
+- B&lt;i&gt; on stage s starts after B&lt;i&gt; ends on stage s+1.
+- On the last stage, B&lt;i&gt; starts after F&lt;i&gt; ends on that stage.
+- A stage runs one op at a time, in its listed order.
+
+The simulator reports the step time, the idle share, and the peak number
+of micro-batches whose activations are stored on each stage at once.
+
+Reply with the complete spec in one fenced code block and nothing else.
+If I paste back an error or a deadlock report, return a corrected spec.
+
+TASK: &lt;describe the schedule you want. Example: p = 4, m = 8, forward 1,
+backward 2. Keep the 1F1B step time and store at most 3 micro-batches on
+stage 0, if that is possible. If it is not, say why in a # comment line.&gt;</pre>
+    </div>
+  </details>
+
+  <section class="notes" aria-labelledby="notes-h">
+    <h2 class="sh" id="notes-h">Sources and assumptions</h2>
+    <p>Schedules: GPipe (Huang et al., 2019, <a href="https://arxiv.org/abs/1811.06965">arXiv:1811.06965</a>); 1F1B as used in Megatron-LM (Narayanan et al., 2021, <a href="https://arxiv.org/abs/2104.04473">arXiv:2104.04473</a>). The simulation assumes that every pass of one kind takes the same time on every stage, and that sending activations or gradients between stages takes no time. The page is one HTML file and uses no libraries.</p>
+  </section>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (s) { return document.querySelector(s); };
+  var LIMIT = { stages: 32, microbatches: 128 };
+  var KEYS = ['stages', 'microbatches', 'schedule', 'forward', 'backward'];
+  var EXAMPLE = { stages: 'stages 4', microbatches: 'microbatches 8', schedule: 'schedule 1f1b', forward: 'forward 1', backward: 'backward 2' };
+
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function fmtNum(x) { return Number.isInteger(x) ? String(x) : String(Math.round(x * 100) / 100); }
+  function pct(x) { return (x * 100).toFixed(1) + '%'; }
+  function listOps(a) { return a.length > 6 ? a.slice(0, 6).join(', ') + ' and ' + (a.length - 6) + ' more' : a.join(', '); }
+  function peakText(pk) { return pk.length <= 8 ? pk.join(' · ') : pk.slice(0, 3).join(' · ') + ' · … · ' + pk.slice(-2).join(' · '); }
+
+  // ---- schedules -------------------------------------------------------
+  function builtinOrder(kind, p, m, s) {
+    var o = [], i, j;
+    if (kind === 'gpipe') {
+      for (i = 0; i < m; i++) o.push({ k: 'F', i: i });
+      for (i = 0; i < m; i++) o.push({ k: 'B', i: i });
+      return o;
+    }
+    var w = Math.min(p - s - 1, m);                       // 1F1B warm-up forwards
+    for (i = 0; i < w; i++) o.push({ k: 'F', i: i });
+    for (j = 0; j < m - w; j++) { o.push({ k: 'F', i: w + j }); o.push({ k: 'B', i: j }); }
+    for (i = m - w; i < m; i++) o.push({ k: 'B', i: i });  // cool-down backwards
+    return o;
+  }
+
+  function specText(o) {
+    var pad = function (v) { return String(v).padEnd(7); };
+    var lines = [
+      o.schedule === 'custom' ? '# 1F1B for p = ' + o.p + ', m = ' + o.m + ', written out as order lines. Edit any line.' : '# Pipeline schedule. Text after # is a comment.',
+      'stages        ' + pad(o.p) + '# p: pipeline stages, one GPU each',
+      'microbatches  ' + pad(o.m) + '# m: micro-batches per training step',
+      'schedule      ' + pad(o.schedule) + '# gpipe, 1f1b or custom',
+      'forward       ' + pad(o.F) + '# time units for one forward pass on one stage',
+      'backward      ' + pad(o.B) + '# time units for one backward pass on one stage'
+    ];
+    if (o.schedule === 'custom') {
+      lines.push('', '# order s: the ops stage s runs, in order');
+      for (var s = 0; s < o.p; s++) {
+        lines.push('order ' + s + ': ' + builtinOrder('1f1b', o.p, o.m, s).map(function (op) { return op.k + op.i; }).join(' '));
+      }
+    }
+    return lines.join('\n') + '\n';
+  }
+
+  // ---- parsing ---------------------------------------------------------
+  function parseSpec(text) {
+    var spec = { stages: null, microbatches: null, schedule: null, forward: null, backward: null, orders: {} };
+    var errors = [], seen = {};
+    text.split(/\r?\n/).forEach(function (raw, idx) {
+      var line = idx + 1;
+      var src = raw.replace(/#.*$/, '').trim();
+      if (!src) return;
+      var om = src.match(/^order\s+(\S+?)\s*:\s*(.*)$/i);
+      if (om) {
+        var s = Number(om[1]);
+        if (!Number.isInteger(s) || s < 0) { errors.push({ line: line, msg: '"order ' + om[1] + ':" needs a stage number, 0 or higher.' }); return; }
+        if (spec.orders[s]) { errors.push({ line: line, msg: 'Stage ' + s + ' already has an order line, on line ' + spec.orders[s].line + '.' }); return; }
+        var ops = [], toks = om[2].split(/\s+/).filter(Boolean);
+        for (var t = 0; t < toks.length; t++) {
+          var mm = toks[t].match(/^([FfBb])(\d+)$/);
+          if (!mm) { errors.push({ line: line, msg: '"' + toks[t] + '" is not an op. Write F or B and a micro-batch index, for example F0 or B3.' }); return; }
+          ops.push({ k: mm[1].toUpperCase(), i: Number(mm[2]) });
+        }
+        spec.orders[s] = { ops: ops, line: line };
+        return;
+      }
+      var parts = src.split(/\s+/), key = parts[0].toLowerCase();
+      if (KEYS.indexOf(key) === -1) { errors.push({ line: line, msg: 'Unknown setting "' + parts[0] + '". Settings are stages, microbatches, schedule, forward, backward and order.' }); return; }
+      seen[key] = true;
+      if (parts.length !== 2) { errors.push({ line: line, msg: 'Write "' + key + '" and one value, for example "' + EXAMPLE[key] + '".' }); return; }
+      var v = parts[1], n = Number(v);
+      if (key === 'schedule') {
+        var sc = v.toLowerCase();
+        if (['gpipe', '1f1b', 'custom'].indexOf(sc) === -1) errors.push({ line: line, msg: 'schedule must be gpipe, 1f1b or custom, not "' + v + '".' });
+        else spec.schedule = sc;
+      } else if (key === 'stages' || key === 'microbatches') {
+        if (!Number.isInteger(n) || n < 1 || n > LIMIT[key]) errors.push({ line: line, msg: key + ' must be a whole number from 1 to ' + LIMIT[key] + '.' });
+        else spec[key] = n;
+      } else {
+        if (!(n > 0) || n > 100) errors.push({ line: line, msg: key + ' must be a number greater than 0 and at most 100.' });
+        else spec[key] = n;
+      }
+    });
+    KEYS.forEach(function (k) { if (!seen[k]) errors.push({ line: null, msg: 'Missing "' + k + '". Add a line such as "' + EXAMPLE[k] + '".' }); });
+    return { spec: spec, errors: errors };
+  }
+
+  function buildOrders(spec) {
+    var p = spec.stages, m = spec.microbatches, errors = [], orders = [], s;
+    var lines = Object.keys(spec.orders).map(Number);
+    if (spec.schedule !== 'custom') {
+      if (lines.length) errors.push({ line: spec.orders[lines[0]].line, msg: 'order lines apply only with "schedule custom". Change the schedule line or delete the order lines.' });
+      for (s = 0; s < p; s++) orders.push(builtinOrder(spec.schedule, p, m, s));
+      return { orders: orders, errors: errors };
+    }
+    lines.forEach(function (st) { if (st >= p) errors.push({ line: spec.orders[st].line, msg: 'Stage ' + st + ' does not exist. With stages ' + p + ', the stages are 0 to ' + (p - 1) + '.' }); });
+    for (s = 0; s < p; s++) {
+      var o = spec.orders[s];
+      if (!o) { errors.push({ line: null, msg: 'No order line for stage ' + s + '. Add "order ' + s + ': F0 … B' + (m - 1) + '".' }); continue; }
+      var count = { F: [], B: [] }, i;
+      for (i = 0; i < m; i++) { count.F.push(0); count.B.push(0); }
+      var bad = [];
+      o.ops.forEach(function (op) { if (op.i >= m) bad.push(op.k + op.i); else count[op.k][op.i]++; });
+      if (bad.length) errors.push({ line: o.line, msg: listOps(bad) + ' out of range. With microbatches ' + m + ', indices are 0 to ' + (m - 1) + '.' });
+      var dup = [], miss = [];
+      ['F', 'B'].forEach(function (k) { for (i = 0; i < m; i++) { if (count[k][i] > 1) dup.push(k + i); if (count[k][i] === 0) miss.push(k + i); } });
+      if (dup.length) errors.push({ line: o.line, msg: 'Stage ' + s + ' lists ' + listOps(dup) + ' more than once.' });
+      if (miss.length) errors.push({ line: o.line, msg: 'Stage ' + s + ' is missing ' + listOps(miss) + '.' });
+      orders.push(o.ops);
+    }
+    return { orders: orders, errors: errors };
+  }
+
+  // ---- simulation ------------------------------------------------------
+  function simulate(orders, p, m, F, B) {
+    var end = { F: [], B: [] }, s, i;
+    for (s = 0; s < p; s++) { end.F.push([]); end.B.push([]); for (i = 0; i < m; i++) { end.F[s].push(null); end.B[s].push(null); } }
+    var ptr = [], free = [], blocks = [], left = 0;
+    for (s = 0; s < p; s++) { ptr.push(0); free.push(0); left += orders[s].length; }
+    while (left > 0) {
+      var moved = false;
+      for (s = 0; s < p; s++) {
+        while (ptr[s] < orders[s].length) {
+          var op = orders[s][ptr[s]];
+          var dep = op.k === 'F' ? (s === 0 ? 0 : end.F[s - 1][op.i]) : (s === p - 1 ? end.F[s][op.i] : end.B[s + 1][op.i]);
+          if (dep === null) break;
+          var start = Math.max(free[s], dep), fin = start + (op.k === 'F' ? F : B);
+          end[op.k][s][op.i] = fin; free[s] = fin;
+          blocks.push({ s: s, k: op.k, i: op.i, start: start, end: fin });
+          ptr[s]++; left--; moved = true;
+        }
+      }
+      if (!moved) {
+        var waits = [];
+        for (s = 0; s < p; s++) {
+          if (ptr[s] >= orders[s].length) continue;
+          var w = orders[s][ptr[s]];
+          var on = w.k === 'F' ? 'F' + w.i + ' on stage ' + (s - 1) : (s === p - 1 ? 'F' + w.i + ' on stage ' + s : 'B' + w.i + ' on stage ' + (s + 1));
+          waits.push('Stage ' + s + ' is stopped at ' + w.k + w.i + ', waiting for ' + on + '.');
+        }
+        return { deadlock: waits };
+      }
+    }
+    var T = Math.max.apply(null, free), peak = [];
+    for (s = 0; s < p; s++) {
+      var ev = [];
+      blocks.forEach(function (b) { if (b.s === s) ev.push(b.k === 'F' ? [b.start, 1] : [b.end, -1]); });
+      ev.sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });   // free before allocate at equal times
+      var c = 0, mx = 0;
+      ev.forEach(function (e) { c += e[1]; if (c > mx) mx = c; });
+      peak.push(mx);
+    }
+    var busy = m * (F + B);
+    return { blocks: blocks, T: T, peak: peak, busy: busy, idle: 1 - busy / T, ratio: (T - busy) / busy, p: p, m: m };
+  }
+
+  // ---- drawing ---------------------------------------------------------
+  // Colors come from classes styled with the site's CSS variables, so both themes apply.
+  var res = null, geom = null, rects = [];
+  function niceStep(unit) {
+    var raw = 44 / unit, pow = Math.pow(10, Math.floor(Math.log10(raw))), ks = [1, 2, 5, 10];
+    for (var i = 0; i < ks.length; i++) if (ks[i] * pow >= raw) return ks[i] * pow;
+    return 10 * pow;
+  }
+  function draw() {
+    var r = res, box = $('#gridbox'), svg = $('#grid');
+    var avail = Math.max(260, box.clientWidth);
+    var labelW = 80, rowH = 30, gap = 6, axisH = 26, padR = 14, padT = 4;
+    var unit = Math.max(4, Math.min(30, (avail - labelW - padR) / r.T));
+    var rowsH = r.p * (rowH + gap) - gap;
+    var W = Math.ceil(labelW + r.T * unit + padR), H = padT + rowsH + axisH;
+    var x = function (t) { return labelW + t * unit; };
+    var y = function (s) { return padT + s * (rowH + gap); };
+    var step = niceStep(unit), gstep = unit >= 6 ? 1 : step, t, s;
+    var h = '<defs><pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" class="g-idle-ln"/></pattern></defs>';
+    // Grid: one column per time unit (or per axis step when units are narrow), lane edges as rows.
+    for (t = 0; t <= r.T + 1e-9; t += gstep) {
+      h += '<line class="g-grid" x1="' + x(t) + '" y1="' + padT + '" x2="' + x(t) + '" y2="' + (padT + rowsH) + '"/>';
+    }
+    for (s = 0; s < r.p; s++) {
+      h += '<line class="g-grid" x1="' + x(0) + '" y1="' + (y(s) + 0.5) + '" x2="' + x(r.T) + '" y2="' + (y(s) + 0.5) + '"/>';
+      h += '<line class="g-grid" x1="' + x(0) + '" y1="' + (y(s) + rowH - 0.5) + '" x2="' + x(r.T) + '" y2="' + (y(s) + rowH - 0.5) + '"/>';
+    }
+    for (s = 0; s < r.p; s++) {
+      h += '<text class="g-lbl" x="' + (labelW - 10) + '" y="' + (y(s) + rowH / 2) + '" text-anchor="end" dominant-baseline="central">stage ' + s + '</text>';
+      h += '<rect x="' + x(0) + '" y="' + y(s) + '" width="' + (r.T * unit) + '" height="' + rowH + '" fill="url(#hatch)"/>';
+    }
+    r.blocks.forEach(function (b, i) {
+      var bx = x(b.start), bw = (b.end - b.start) * unit;
+      h += '<rect class="g-' + b.k + '" data-i="' + i + '" x="' + (bx + 0.5) + '" y="' + (y(b.s) + 0.5) + '" width="' + Math.max(1, bw - 1) + '" height="' + (rowH - 1) + '"><title>' + b.k + b.i + ' on stage ' + b.s + ', t = ' + fmtNum(b.start) + ' to ' + fmtNum(b.end) + '</title></rect>';
+      if (bw >= 16) h += '<text class="g-t' + b.k + '" x="' + (bx + bw / 2) + '" y="' + (y(b.s) + rowH / 2) + '" text-anchor="middle" dominant-baseline="central">' + b.i + '</text>';
+    });
+    var ay = padT + rowsH + 2;
+    h += '<line class="g-axis" x1="' + x(0) + '" y1="' + (ay + 0.5) + '" x2="' + x(r.T) + '" y2="' + (ay + 0.5) + '"/>';
+    for (t = 0; t <= r.T + 1e-9; t += step) {
+      h += '<line class="g-axis" x1="' + x(t) + '" y1="' + ay + '" x2="' + x(t) + '" y2="' + (ay + 5) + '"/>';
+      h += '<text class="g-tick" x="' + x(t) + '" y="' + (ay + 18) + '" text-anchor="middle">' + fmtNum(t) + '</text>';
+    }
+    h += '<line id="ph" class="g-ph" x1="' + x(tNow) + '" y1="' + (padT - 3) + '" x2="' + x(tNow) + '" y2="' + ay + '"/>';
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    svg.setAttribute('width', W);
+    svg.setAttribute('height', H);
+    svg.innerHTML = h;
+    geom = { x: x };
+    rects = [];
+    svg.querySelectorAll('rect[data-i]').forEach(function (el) { rects[Number(el.getAttribute('data-i'))] = el; });
+    active.forEach(function (i) { if (rects[i]) rects[i].classList.add('on'); });
+  }
+
+  // ---- rendering -------------------------------------------------------
+  function renderStats(spec, r) {
+    if (!r) {
+      ['#s-T', '#s-idle', '#s-bub', '#s-peak'].forEach(function (id) { $(id).textContent = '—'; });
+      $('#s-T-sub').textContent = 'Fix the spec to see results.';
+      $('#s-idle-sub').textContent = '';
+      $('#s-bub-sub').textContent = '';
+      return;
+    }
+    var p = spec.stages, m = spec.microbatches, builtin = spec.schedule !== 'custom';
+    $('#s-T').textContent = fmtNum(r.T);
+    $('#s-T-sub').textContent = 'time units; each stage is busy for ' + fmtNum(r.busy);
+    $('#s-idle').textContent = pct(r.idle);
+    $('#s-idle-sub').textContent = builtin ? '(p−1)/(m+p−1) = ' + pct((p - 1) / (m + p - 1)) : 'The closed form covers gpipe and 1f1b only.';
+    $('#s-bub').textContent = pct(r.ratio);
+    $('#s-bub-sub').textContent = builtin ? '(p−1)/m = ' + pct((p - 1) / m) + ', the ratio Megatron-LM reports' : 'Idle time divided by busy time, per stage.';
+    $('#s-peak').textContent = peakText(r.peak);
+  }
+
+  function renderCompare(spec, r) {
+    var p = spec.stages, m = spec.microbatches;
+    var rows = [['GPipe', 'gpipe'], ['1F1B', '1f1b']].map(function (d) {
+      var orders = [];
+      for (var s = 0; s < p; s++) orders.push(builtinOrder(d[1], p, m, s));
+      return { name: d[0], kind: d[1], r: simulate(orders, p, m, spec.forward, spec.backward) };
+    });
+    if (spec.schedule === 'custom' && r) rows.push({ name: 'Custom', kind: 'custom', r: r });
+    $('#cmp-body').innerHTML = rows.map(function (row) {
+      var cur = row.kind === spec.schedule;
+      return '<tr' + (cur ? ' class="cur"' : '') + '><th scope="row">' + row.name + (cur ? ' <span class="cur-tag">current</span>' : '') + '</th><td class="num">' + fmtNum(row.r.T) + '</td><td class="num">' + pct(row.r.idle) + '</td><td class="num">' + peakText(row.r.peak) + '</td></tr>';
+    }).join('');
+    var g = rows[0].r, o = rows[1].r, sameMem = g.peak.join() === o.peak.join();
+    var txt = Math.abs(g.T - o.T) < 1e-9
+      ? 'With these settings GPipe and 1F1B take the same step time, ' + fmtNum(g.T) + ' units, and leave the same idle share, ' + pct(g.idle) + '. '
+      : 'GPipe takes ' + fmtNum(g.T) + ' units and 1F1B takes ' + fmtNum(o.T) + '. ';
+    txt += sameMem
+      ? 'They also store the same number of micro-batches on every stage.'
+      : 'They differ in memory: GPipe stores activations for all ' + m + ' micro-batches on every stage, while 1F1B stores at most ' + o.peak[0] + ' on stage 0 and ' + o.peak[p - 1] + ' on stage ' + (p - 1) + '.';
+    $('#insight').textContent = txt;
+  }
+
+  function renderMsgs(errs, dl, r) {
+    var box = $('#msgs');
+    if (errs.length) {
+      box.innerHTML = errs.map(function (e) {
+        return e.line
+          ? '<button type="button" class="err-line" data-line="' + e.line + '"><b>Line ' + e.line + '</b> ' + esc(e.msg) + '</button>'
+          : '<p class="err">' + esc(e.msg) + '</p>';
+      }).join('');
+      return;
+    }
+    if (dl) {
+      box.innerHTML = '<p class="err"><b>Deadlock.</b> No stage can start its next pass.</p>' + dl.map(function (w) { return '<p class="err">' + esc(w) + '</p>'; }).join('');
+      return;
+    }
+    box.innerHTML = '<p class="ok">Spec OK: ' + r.blocks.length + ' passes simulated.</p>';
+  }
+
+  // ---- playback and sound ---------------------------------------------
+  var playing = false, tNow = 0, last = 0, raf = 0, iStart = 0, starts = [], active = [];
+  var soundOn = false, ac = null, master = null;
+  var SCALE = [0, 2, 4, 7, 9];
+
+  function setPlayLabel() { $('#play').textContent = playing ? 'Pause' : (res && tNow > 0 && tNow < res.T ? 'Resume' : 'Play'); }
+  function clock() { $('#clock').textContent = 't = ' + fmtNum(Math.round(tNow * 10) / 10) + ' / ' + (res ? fmtNum(res.T) : '—'); }
+  function setPH() {
+    var ph = document.getElementById('ph');
+    if (!ph || !geom) return;
+    var X = geom.x(tNow);
+    ph.setAttribute('x1', X); ph.setAttribute('x2', X);
+  }
+  function clearActive() { active.forEach(function (i) { if (rects[i]) rects[i].classList.remove('on'); }); active = []; }
+  function stopPlayback(reset) {
+    cancelAnimationFrame(raf); playing = false; clearActive();
+    if (reset) { tNow = 0; iStart = 0; }
+    setPH(); clock(); setPlayLabel();
+  }
+  function ensureAudio() {
+    if (!soundOn) return;
+    try {
+      if (!ac) {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        ac = new AC();
+        var comp = ac.createDynamicsCompressor();
+        master = ac.createGain(); master.gain.value = 0.6;
+        master.connect(comp); comp.connect(ac.destination);
+      }
+      if (ac.state === 'suspended') ac.resume();
+    } catch (_) { ac = null; master = null; }
+  }
+  function freq(stage, p) {
+    var k = (p - 1 - stage) % 10;                         // stage 0 is the highest pitch
+    return 220 * Math.pow(2, (12 * Math.floor(k / 5) + SCALE[k % 5]) / 12);
+  }
+  function note(b, msPerUnit) {
+    if (!ac || !master) return;
+    var t = ac.currentTime + 0.01, isF = b.k === 'F';
+    var dur = Math.max(0.05, (b.end - b.start) * msPerUnit / 1000);
+    var o = ac.createOscillator(), gn = ac.createGain(), peakGain = 0.18 / Math.sqrt(res.p);
+    o.type = isF ? 'triangle' : 'sine';
+    o.frequency.value = freq(b.s, res.p) * (isF ? 2 : 1);
+    gn.gain.setValueAtTime(0.0001, t);
+    gn.gain.exponentialRampToValueAtTime(peakGain, t + 0.01);
+    if (isF) {
+      gn.gain.exponentialRampToValueAtTime(0.0001, t + Math.min(0.4, Math.max(0.06, dur * 0.9)));
+    } else {
+      gn.gain.setValueAtTime(peakGain, t + dur * 0.75);
+      gn.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    }
+    o.connect(gn); gn.connect(master);
+    o.start(t); o.stop(t + dur + 0.05);
+  }
+  function frame(now) {
+    var ms = Number($('#speed').value);
+    tNow = Math.min(res.T, tNow + (now - last) / ms);
+    last = now;
+    while (iStart < starts.length && res.blocks[starts[iStart]].start <= tNow) {
+      var idx = starts[iStart++];
+      active.push(idx);
+      if (rects[idx]) rects[idx].classList.add('on');
+      if (soundOn) note(res.blocks[idx], ms);
+    }
+    active = active.filter(function (i) {
+      if (res.blocks[i].end <= tNow) { if (rects[i]) rects[i].classList.remove('on'); return false; }
+      return true;
+    });
+    setPH(); clock();
+    if (tNow >= res.T) { playing = false; clearActive(); setPlayLabel(); return; }
+    raf = requestAnimationFrame(frame);
+  }
+  function togglePlay() {
+    if (!res) return;
+    if (playing) { cancelAnimationFrame(raf); playing = false; setPlayLabel(); return; }
+    if (tNow >= res.T) { tNow = 0; iStart = 0; clearActive(); }
+    ensureAudio();
+    playing = true; setPlayLabel();
+    last = performance.now();
+    raf = requestAnimationFrame(frame);
+  }
+
+  // ---- wiring ----------------------------------------------------------
+  var ta = $('#spec');
+  function run() {
+    var parsed = parseSpec(ta.value), spec = parsed.spec, errs = parsed.errors, r = null, dl = null;
+    if (!errs.length) {
+      var b = buildOrders(spec);
+      errs = b.errors;
+      if (!errs.length) {
+        r = simulate(b.orders, spec.stages, spec.microbatches, spec.forward, spec.backward);
+        if (r.deadlock) { dl = r.deadlock; r = null; }
+      }
+    }
+    renderMsgs(errs, dl, r);
+    if (r) {
+      $('#board').classList.remove('stale');
+      stopPlayback(true);
+      res = r;
+      starts = r.blocks.map(function (_, i) { return i; }).sort(function (a, c) { var A = r.blocks[a], C = r.blocks[c]; return A.start - C.start || A.s - C.s; });
+      draw(); clock(); setPlayLabel();
+      renderStats(spec, r);
+    } else {
+      $('#board').classList.add('stale');
+      if (playing) stopPlayback(false);
+      renderStats(null, null);
+    }
+    if (!parsed.errors.length) renderCompare(spec, r);
+  }
+
+  var PRESETS = [
+    { label: '1F1B · p 4 · m 8', o: { p: 4, m: 8, schedule: '1f1b', F: 1, B: 2 } },
+    { label: 'GPipe · p 4 · m 8', o: { p: 4, m: 8, schedule: 'gpipe', F: 1, B: 2 } },
+    { label: '1F1B · p 8 · m 32', o: { p: 8, m: 32, schedule: '1f1b', F: 1, B: 2 } },
+    { label: 'Custom · 1F1B written out', o: { p: 4, m: 6, schedule: 'custom', F: 1, B: 2 } }
+  ];
+  var pbox = $('#presets');
+  PRESETS.forEach(function (pr) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'preset'; b.textContent = pr.label;
+    b.addEventListener('click', function () { ta.value = specText(pr.o); run(); });
+    pbox.appendChild(b);
+  });
+
+  var tmr = 0;
+  ta.addEventListener('input', function () { clearTimeout(tmr); tmr = setTimeout(run, 220); });
+  $('#msgs').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-line]');
+    if (!b) return;
+    var n = Number(b.getAttribute('data-line')), lines = ta.value.split('\n'), start = 0;
+    for (var i = 0; i < n - 1 && i < lines.length; i++) start += lines[i].length + 1;
+    ta.focus();
+    ta.setSelectionRange(start, start + (lines[n - 1] || '').length);
+  });
+  $('#play').addEventListener('click', togglePlay);
+  $('#restart').addEventListener('click', function () { var was = playing; stopPlayback(true); if (was) togglePlay(); });
+  $('#sound').addEventListener('click', function () {
+    soundOn = !soundOn;
+    this.setAttribute('aria-pressed', String(soundOn));
+    this.textContent = soundOn ? 'Sound: on' : 'Sound: off';
+    if (soundOn) ensureAudio();
+  });
+  $('#speed').addEventListener('input', function () { $('#speed-v').textContent = this.value + ' ms/unit'; });
+  document.addEventListener('keydown', function (e) {
+    if (e.code !== 'Space') return;
+    var t = document.activeElement;
+    if (t && /^(TEXTAREA|INPUT|BUTTON|SELECT|SUMMARY|A)$/.test(t.tagName)) return;
+    e.preventDefault(); togglePlay();
+  });
+  var rt = 0;
+  window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(function () { if (res) { draw(); setPH(); } }, 120); });
+
+  $('#copy').addEventListener('click', function () {
+    var text = $('#prompt-text').textContent, st = $('#copy-status');
+    var fallback = function () {
+      var range = document.createRange(); range.selectNodeContents($('#prompt-text'));
+      var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+      st.textContent = 'Copying is blocked here. The prompt is selected: press Ctrl+C or ⌘C.';
+    };
+    try {
+      navigator.clipboard.writeText(text).then(function () { st.textContent = 'Copied. Replace the TASK line before you send it.'; }, fallback);
+    } catch (_) { fallback(); }
+  });
+
+  ta.value = specText(PRESETS[0].o);
+  run();
+
+  // Exposed for checks.
+  window.__pipeline = { builtinOrder: builtinOrder, simulate: simulate, parseSpec: parseSpec, buildOrders: buildOrders, specText: specText };
+})();
+</script>
+<!-- site-foot -->
+</body>
+</html>
