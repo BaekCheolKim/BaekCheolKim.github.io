@@ -3,6 +3,7 @@
 # summary, period, role, team, stack and links ("Label | URL" pairs separated by ";").
 # Every field is optional; lines starting with # are comments.
 # date: the date used to sort this entry in "Latest" (YYYY-MM-DD).
+# thumbnail: the picture on this case study's homepage card; without it, the first picture below.
 title: Privacy-aware head localization
 summary: A model that predicts where people's heads are from images that show only their bodies, so that a robot's camera could avoid recording faces. It reaches 0.63 precision and 0.71 recall on CrowdHuman.
 date: 2024-11-01
@@ -11,6 +12,8 @@ team: Four students; names and individual contributions are in the report
 role: Pre-processed the dataset, trained the models on a GPU cluster server, prepared the video and co-wrote the report
 stack: PyTorch, YOLO11, YOLO11-Pose, ResNet, CrowdHuman
 links: Report (PDF, 8 pages) | report.pdf
+# Figure 1 of the report, widened to the card's shape.
+thumbnail: robot-camera.png
 ---
 
 ## Problem

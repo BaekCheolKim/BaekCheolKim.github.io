@@ -52,9 +52,10 @@ To change a TIL later, edit the file and push again; the page shows "Updated" wi
 
 | To change | Edit |
 |---|---|
-| Your name, headline, role line, education and "Elsewhere" links on the homepage | `SITE` near the top of `build.py` |
+| Your name, headline, role line, education, "Featured" line and "Elsewhere" links on the homepage | `SITE` near the top of `build.py` |
 | The order or content of homepage sections | `home_page()` in `build.py` |
-| Fig. 1 on the homepage | `MODELS`, `HBM_MIB` and `TOKENS` in `build.py`, and the same constants in `static/site.js` |
+| The order of the case studies on the homepage (the cards and the Work list beside "Latest") | `case_study_order` in `SITE` |
+| The picture on a case-study card | `thumbnail:` in the case study's front matter; without it, the card shows the first picture in the text |
 | Header tabs | `build()` in `build.py`, where `NAV` is filled in; standalone pages in `PAGES` |
 | Colors, fonts, sizes and spacing | `static/site.css`; each section names the part of the page it styles |
 | Text of TILs, case studies, About and CV | the Markdown files listed below |
@@ -80,7 +81,7 @@ To change a TIL later, edit the file and push again; the page shows "Updated" wi
 - **Titles:** the first line of a Markdown file is its title (`# Title`). Front matter is optional: lines between two `---` lines at the top, each `key: value`; lines starting with `#` there are comments.
 - **Dates:** created is the file's first commit and updated is its latest commit. Uncommitted files show today's date. Front matter `date:` and `updated:` (YYYY-MM-DD) override git.
 - **Summaries:** the first paragraph is the summary. Front matter `summary:` overrides it.
-- **Case studies:** front matter `period`, `role`, `team`, `stack` and `links` (`Label | URL ; Label | URL`) fill the box at the top of the page. The comments at the top of each `work/*/index.md` repeat this.
+- **Case studies:** front matter `period`, `role`, `team`, `stack` and `links` (`Label | URL ; Label | URL`) fill the box at the top of the page. Each case study also gets a card on the homepage, under "Latest": its picture is the file named by `thumbnail:`, or else the first picture in the text. The comments at the top of each `work/*/index.md` repeat this.
 - **Tools:** a tool's `<title>` and `<meta name="description">` give its name and summary. The build puts the site header and footer where the tool has `<!-- site-head -->` and `<!-- site-foot -->`, and adds the canonical link and link-preview tags before `</head>` unless the tool has its own `og:` tags.
 - **Private notes:** HTML comments (`<!-- … -->`) in Markdown are removed before publishing. Use them for reminders to yourself.
 - **Broken links stop the build:** if a page links to a file that does not exist, the build fails and names it.

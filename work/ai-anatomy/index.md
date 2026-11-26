@@ -9,6 +9,7 @@ date: 2026-10-06
 period: September–October 2026
 stack: HTML, CSS and JavaScript; no build step and no libraries
 # links: "Label | URL" pairs separated by ";".
+# thumbnail: the picture on this case study's homepage card; without it, the first picture below.
 links: Live page | https://baekcheolkim.github.io/AI-Anatomy/ ; Repository | https://github.com/BaekCheolKim/AI-Anatomy
 ---
 
@@ -76,5 +77,3 @@ The hardware is the NVIDIA GH200 96GB node of the KISTI-6 "HANGANG" pilot system
 
 - The technique pages behind links such as "ZeRO stages →" have section headings only.
 - Vision Transformer, latent diffusion and multimodal models are listed as outlines, without configs or numbers.
-
-Fig. 1 on the [homepage](../../index.html) uses the same inference-memory formulas.

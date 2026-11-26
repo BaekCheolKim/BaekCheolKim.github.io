@@ -3,6 +3,7 @@
 # summary, period, role, team, stack and links ("Label | URL" pairs separated by ";").
 # Every field is optional; lines starting with # are comments.
 # date: the date used to sort this entry in "Latest" (YYYY-MM-DD).
+# thumbnail: the picture on this case study's homepage card; without it, the first picture below.
 title: Video Call AI
 summary: A prototype that turns the live captions of a video call into coaching prompts for its participants, built on Azure Communication Services and Azure OpenAI.
 date: 2025-01-27

@@ -58,9 +58,9 @@
   --button-bgColor-hover: #eff2f5;
   --button-borderColor: #d1d9e0;
 
-  /* Charts: Fig. 1 on the homepage and the pipeline tool */
-  --chart-1: #0969da;     /* model weights; backward passes */
-  --chart-2: #80ccff;     /* KV cache; forward passes */
+  /* Charts: the pipeline tool */
+  --chart-1: #0969da;     /* backward passes */
+  --chart-2: #80ccff;     /* forward passes */
   --on-chart-1: #ffffff;  /* text on --chart-1 */
   --on-chart-2: #1f2328;  /* text on --chart-2 */
   --grid: #eff2f5;        /* chart grid lines */
@@ -308,8 +308,8 @@ main.wrap { padding-block: 32px 0; }
 }
 
 
-/* ---------- Figures: Fig. 1 on the homepage, and the pipeline tool's chart --
-   HTML: hbm_figure() in build.py; the numbers change in static/site.js.   */
+/* ---------- Figures: the pipeline tool's chart ------------------------------
+   HTML: tools/pipeline-schedule.html, which adds rules of its own.         */
 
 .fig { margin: 32px 0 0; }
 .fig-head {
@@ -321,88 +321,35 @@ main.wrap { padding-block: 32px 0; }
 }
 .fig-title { margin: 0; font-size: 14px; font-weight: 600; }
 .fig-no { margin-right: 8px; color: var(--fgColor-muted); font-weight: 400; }
-.fig-body { padding: 16px; }
-.fig-caption { margin: 12px 0 0; max-width: 760px; color: var(--fgColor-muted); font-size: 12px; }
-.fig > .fig-caption { margin: 0; padding: 0 16px 16px; }
 
-/* Segmented control: the model buttons above Fig. 1 */
-.seg {
-  display: inline-flex;
-  flex-wrap: wrap;
-  padding: 2px;
-  background: var(--bgColor-neutral-muted);
-  border-radius: 6px;
-}
-.seg button {
-  margin: 0;
-  padding: 3px 12px;
-  font: inherit;
-  font-size: 12px;
-  line-height: 20px;
-  color: var(--fgColor-default);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  cursor: pointer;
-}
-.seg button[aria-pressed="true"] {
-  font-weight: 600;
-  background: var(--bgColor-default);
-  border-color: var(--borderColor-default);
-}
-
-/* The HBM bar: weights, KV cache, capacity line and overflow */
-.plot { position: relative; padding-top: 24px; }
-.hbm-track {
-  position: relative;
-  display: flex;
-  height: 28px;
-  background: var(--bgColor-muted);
-  box-shadow: inset 0 0 0 1px var(--borderColor-default);
-}
-.hbm-w { background: var(--chart-1); }
-.hbm-kv { background: var(--chart-2); }
-.hbm-over {
-  position: absolute;
-  top: -4px;
-  bottom: -4px;
-  background: repeating-linear-gradient(135deg, var(--fgColor-danger) 0 2px, transparent 2px 7px);
-}
-.hbm-cap { position: absolute; top: -24px; bottom: -6px; width: 0; border-left: 2px solid var(--fgColor-default); }
-.hbm-cap span { position: absolute; top: 0; left: 6px; white-space: nowrap; font-size: 12px; line-height: 16px; }
-.hbm-cap.flip span { left: auto; right: 6px; }
-.axis { position: relative; height: 18px; margin-top: 8px; color: var(--fgColor-muted); font-size: 12px; }
-.axis span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
-.axis span:first-child { transform: none; }
-.axis .unit { right: 0; left: auto !important; transform: none; }
-
-/* Readout: label and value pairs under a chart */
+/* Readout: label and value pairs beside a chart */
 .readout { display: flex; flex-wrap: wrap; gap: 12px 32px; margin: 16px 0 0; }
 .readout div { min-width: 96px; }
 .readout dt { display: flex; align-items: center; gap: 6px; color: var(--fgColor-muted); font-size: 12px; }
 .readout dd { margin: 0; font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.readout dd small { margin-left: 3px; color: var(--fgColor-muted); font-size: 12px; font-weight: 400; }
 .key { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
-.key-w { background: var(--chart-1); }
-.key-kv { background: var(--chart-2); }
-.key-free { box-shadow: inset 0 0 0 1px var(--fgColor-muted); }
-.key-over { background: repeating-linear-gradient(135deg, var(--fgColor-danger) 0 2px, transparent 2px 4px); box-shadow: inset 0 0 0 1px var(--fgColor-danger); }
-.status { margin: 12px 0 0; font-size: 14px; }
-.status.bad { color: var(--fgColor-danger); }
 
 
-/* ---------- Homepage: "Latest" and the side column --------------------------
-   HTML: home_page() and row() in build.py. Filters and search: site.js.   */
+/* ---------- Homepage: "Latest", the case-study cards and the side column ---
+   HTML: home_page(), row() and case_cards() in build.py. Filters and search:
+   site.js. Wide screens show "Latest" with the side column beside it and the
+   cards below both; narrow screens show "Latest", the cards, then the side
+   column.                                                                  */
 
 .home-cols {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 256px;
-  gap: 32px 40px;
+  grid-template-areas: "stream side" "cases cases";
+  gap: 40px;
   margin-top: 40px;
   align-items: start;
 }
-@media (max-width: 900px) { .home-cols { grid-template-columns: minmax(0, 1fr); } }
-.stream { min-width: 0; }
+@media (max-width: 900px) {
+  .home-cols { grid-template-columns: minmax(0, 1fr); grid-template-areas: "stream" "cases" "side"; }
+}
+.stream { grid-area: stream; min-width: 0; }
+.cases { grid-area: cases; min-width: 0; }
+.side { grid-area: side; }
 
 .latest-head {
   display: flex;
@@ -496,6 +443,58 @@ main.wrap { padding-block: 32px 0; }
 .side li { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .side p { margin: 0; color: var(--fgColor-muted); }
 .side li > span:not(.Counter) { color: var(--fgColor-muted); }
+/* The Work list repeats the case-study cards, which sit just above the side
+   column on narrow screens, so it is shown on wide screens only. */
+@media (max-width: 900px) { .side-work { display: none; } }
+
+/* Case-study cards: GitHub-style boxes with the picture on top, three to a row
+   on wide screens. The title's link covers the whole card. */
+.cases-title {
+  margin: 0;
+  padding-bottom: 8px;
+  font-size: 20px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--borderColor-muted);
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+@media (max-width: 900px) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 544px) { .cards { grid-template-columns: minmax(0, 1fr); } }
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--bgColor-default);
+  border: 1px solid var(--borderColor-default);
+  border-radius: 6px;
+}
+.card-img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  object-position: top;
+  background: var(--bgColor-muted);
+  border-bottom: 1px solid var(--borderColor-default);
+}
+.card-body { display: flex; flex: 1; flex-direction: column; padding: 12px 16px 16px; }
+.card-title { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.4; }
+.card-title a::after { content: ""; position: absolute; inset: 0; }
+.card:hover .card-title a { text-decoration: underline; }
+@supports selector(:has(a)) {
+  .card-title a:focus-visible { outline: none; }
+  .card:has(.card-title a:focus-visible) { outline: 2px solid var(--focus-outlineColor); outline-offset: 2px; }
+}
+.card-text { margin: 4px 0 0; color: var(--fgColor-muted); font-size: 14px; }
+.card-meta { margin: auto 0 0; padding-top: 8px; color: var(--fgColor-muted); font-size: 12px; }
 
 
 /* ---------- Pages of text: TIL, article, case study, About, CV -------------

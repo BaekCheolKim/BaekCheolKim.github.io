@@ -15,7 +15,7 @@ not exist, so a broken link never reaches the published site.
 HOW TO EDIT (README.md has the step-by-step version)
     Your name, headline, links  SITE, just below
     Homepage                    home_page()
-    Fig. 1 on the homepage      hbm_figure() here and the HBM part of static/site.js
+    Case-study cards            case_cards(); their order is case_study_order in SITE
     Header tabs                 build(), where NAV is filled in
     Header and footer HTML      site_head() and site_foot()
     Standalone pages            PAGES (About, CV, Glossary)
@@ -59,10 +59,13 @@ SITE = {
                  "memory residency, parallel layouts, collective communication."),
     "description": ("TILs, tools and case studies by Baek C. Kim, who analyzes how LLM "
                     "training and inference map onto GPU supercomputers."),
-    # "Featured" on the homepage: (link text, link, text after the link)
-    "featured": ("AI-Anatomy", "work/ai-anatomy/index.html",
-                 "what each GPU holds, where data moves and what each collective costs, "
-                 "for five open LLMs on NVIDIA GH200 nodes"),
+    # A "Featured" line on the homepage: (link text, link, text after the link).
+    # None leaves the line out.
+    "featured": None,
+    # The order of the case studies on the homepage (the cards under "Latest" and the
+    # Work list in the side column): folder names under work/. A case study missing
+    # from this list comes after these, newest first.
+    "case_study_order": ["video-call-ai", "privacy-aware-head-localization", "ai-anatomy"],
     "education": "Master of Machine Learning and Computer Vision, Australian National University, 2023–2025",
     # "Elsewhere" on the homepage. A link that starts with http opens another site;
     # other links are pages of this site.
@@ -100,17 +103,6 @@ TOPIC_WORDS = {"ai": "AI", "api": "API", "cpu": "CPU", "cuda": "CUDA", "gpu": "G
                "nccl": "NCCL", "nvlink": "NVLink", "pdf": "PDF", "pytorch": "PyTorch",
                "rdma": "RDMA", "github": "GitHub", "html": "HTML", "css": "CSS", "js": "JS"}
 
-# Fig. 1 on the homepage. static/site.js holds the same numbers for the buttons,
-# so change both together.
-HBM_MIB = 97871                      # HBM per GH200 GPU: nvidia-smi's memory.total, measured
-TOKENS = 8 * 8192                    # 8 sequences of 8,192 tokens
-MODELS = [  # key, button label, parameters, layers, KV heads, head dim, TP degree
-    ("8b", "8B · TP 1", 8030261248, 32, 8, 128, 1),
-    ("70b", "70B · TP 4", 70553706496, 80, 8, 128, 4),
-    ("405b", "405B · TP 4", 405853388800, 126, 8, 128, 4),
-]
-DEFAULT_MODEL = "70b"
-
 MD = MarkdownIt("commonmark", {"html": True, "xhtmlOut": False}).enable(["table", "strikethrough"])
 TODAY = dt.date.today().isoformat()
 MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -121,6 +113,7 @@ COMMENT = re.compile(r"<!--.*?-->", re.S)
 FRONT = re.compile(r"\A---[ \t]*\n(.*?)\n---[ \t]*\n", re.S)
 SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
 FIGURE = re.compile(r"<p>(<img [^>]*>)</p>")
+IMG_SRC = re.compile(r'<img [^>]*src="([^"]*)"')
 ATTR = re.compile(r'\s(href|src)="([^"]*)"')
 
 
@@ -540,94 +533,69 @@ def rows(entries, root, kind=True, year=True):
     return '<ol class="%s">\n%s\n</ol>' % (cls, items)
 
 
-# ---------------------------------------------------------------- Fig. 1
+# ---------------------------------------------------------------- case-study cards
 
-def hbm_state(key):
-    gib = 1024 ** 3
-    hbm = HBM_MIB * 1024 ** 2
-    _, _, params, layers, kv_heads, head_dim, tp = [m for m in MODELS if m[0] == key][0]
-    weights = params * 2 / tp
-    kv = 2 * layers * kv_heads * head_dim * 2 * TOKENS / tp
-    total = weights + kv
-    axis = max(hbm, total) * 1.04
-    step = next(s for s in (10, 20, 25, 50, 100, 200, 250, 500, 1000) if axis / gib / s <= 5.5)
-    return {"gib": gib, "hbm": hbm, "w": weights, "kv": kv, "total": total, "axis": axis,
-            "step": step, "tp": tp}
-
-
-def hbm_figure(root):
-    """Fig. 1 in its default state. site.js redraws it when a model button is pressed."""
-    s = hbm_state(DEFAULT_MODEL)
-    gib, axis = s["gib"], s["axis"]
-
-    def pct(x):
-        return "%.3f%%" % (x / axis * 100)
-
-    over = s["total"] > s["hbm"]
-    buttons = "".join(
-        '<button type="button" data-model="%s" aria-pressed="%s">%s</button>'
-        % (key, "true" if key == DEFAULT_MODEL else "false", label)
-        for key, label, *_ in MODELS)
-    ticks = []
-    value = 0
-    while value * gib <= axis * 0.97:
-        ticks.append('<span style="left:%s">%d</span>' % (pct(value * gib), value))
-        value += s["step"]
-    ticks.append('<span class="unit">GiB</span>')
-    free = s["hbm"] - s["total"]
-    if over:
-        status = ("Does not fit: %.1f GiB needed per GPU, %.1f GiB available."
-                  % (s["total"] / gib, s["hbm"] / gib))
-        if s["w"] > s["hbm"]:
-            status += " Weights alone exceed HBM at TP %d." % s["tp"]
+def thumbnail(entry, errors):
+    """The picture on a case study's card: the file named by thumbnail: in its front
+    matter, else the first picture in its text, else none (""). The path returned
+    is relative to the site root."""
+    src = entry.meta.get("thumbnail", "")
+    if src:
+        if is_local(src) and not check_target(src, entry.src, errors):
+            return ""
     else:
-        status = ("Fits: weights and KV cache take %.1f GiB of the %.1f GiB per GPU."
-                  % (s["total"] / gib, s["hbm"] / gib))
-    return """<figure class="fig Box" id="hbm">
-<div class="fig-head Box-header">
-<h2 class="fig-title"><span class="fig-no">Fig. 1</span>Per-GPU HBM during inference</h2>
-<div class="seg" role="group" aria-label="Model and tensor-parallel degree">{buttons}</div>
-</div>
-<div class="fig-body">
-<div class="plot">
-<div class="hbm-track" role="img" id="hbm-track" aria-label="{status}">
-<span class="hbm-w" id="hbm-w" style="width:{w}"></span><span class="hbm-kv" id="hbm-kv" style="width:{kv}"></span>
-<span class="hbm-over" id="hbm-over" style="left:{cap};width:{ow}"{over_hidden}></span>
-<span class="hbm-cap{flip}" id="hbm-cap" style="left:{cap}"><span>HBM {hbm:.1f} GiB</span></span>
-</div>
-<div class="axis" id="hbm-axis" aria-hidden="true">{ticks}</div>
-</div>
-<dl class="readout">
-<div><dt><i class="key key-w"></i>Weights</dt><dd><span id="hbm-wv">{wv:.1f}</span><small>GiB</small></dd></div>
-<div><dt><i class="key key-kv"></i>KV cache</dt><dd><span id="hbm-kvv">{kvv:.1f}</span><small>GiB</small></dd></div>
-<div><dt><i class="key {free_key}" id="hbm-fk"></i><span id="hbm-fl">{free_label}</span></dt><dd><span id="hbm-fv">{fv:.1f}</span><small>GiB</small></dd></div>
-</dl>
-<p class="status{bad}" id="hbm-status">{status}</p>
-</div>
-<figcaption class="fig-caption">Llama 3.1 with BF16 weights and KV cache for 8 sequences of 8,192 tokens,
-split across tensor-parallel (TP) ranks, on one NVIDIA GH200 with 97,871 MiB of HBM
-(the total that nvidia-smi reports). Activations, workspace and the CUDA context are not counted.
-The formulas come from <a href="{root}work/ai-anatomy/index.html">AI-Anatomy</a>.</figcaption>
-</figure>""".format(
-        buttons=buttons, w=pct(s["w"]), kv=pct(s["kv"]), cap=pct(s["hbm"]),
-        ow=pct(max(0, s["total"] - s["hbm"])), over_hidden="" if over else " hidden",
-        flip=" flip" if s["hbm"] / axis > 0.7 else "", hbm=s["hbm"] / gib, ticks="".join(ticks),
-        wv=s["w"] / gib, kvv=s["kv"] / gib, fv=abs(free) / gib,
-        free_label="Over" if over else "Free", free_key="key-over" if over else "key-free",
-        bad=" bad" if over else "", status=esc(status), root=root)
+        match = IMG_SRC.search(entry.body)
+        src = html.unescape(match.group(1)) if match else ""
+    if is_local(src):
+        return entry.url.rsplit("/", 1)[0] + "/" + src
+    return src
+
+
+def ordered_case_studies(works, errors):
+    """Case studies in the homepage's order: those named in SITE["case_study_order"],
+    then the ones it leaves out, newest first."""
+    by_folder = {e.src.parent.name: e for e in works}
+    order = list(dict.fromkeys(SITE["case_study_order"]))
+    for name in order:
+        if name not in by_folder:
+            errors.append('build.py: SITE["case_study_order"] lists "%s", but work/%s/index.md '
+                          'does not exist' % (name, name))
+    listed = [by_folder[name] for name in order if name in by_folder]
+    return listed + [e for e in newest_first(works) if e not in listed]
+
+
+def case_cards(works, errors):
+    """The cards under "Latest" on the homepage, one per case study, in the order
+    given: picture, title, summary, and the period (or the month of its date)."""
+    cards = []
+    for e in works:
+        image = thumbnail(e, errors)
+        picture = ('<img class="card-img" src="%s" alt="" loading="lazy" decoding="async">'
+                   % esc(image) if image else "")
+        year, month = e.created.split("-")[:2]
+        when = e.meta.get("period") or "%s %s" % (MONTH_NAMES[int(month) - 1], year)
+        text = '<p class="card-text">%s</p>' % esc(e.summary) if e.summary else ""
+        cards.append('<li class="card">%s<div class="card-body">'
+                     '<h3 class="card-title"><a href="%s">%s</a></h3>%s'
+                     '<p class="card-meta">%s</p></div></li>'
+                     % (picture, e.url, esc(e.title), text, esc(when)))
+    return '<ul class="cards">\n%s\n</ul>' % "\n".join(cards)
 
 
 # ---------------------------------------------------------------- pages
 
-def home_page(content, stream):
-    """The homepage: introduction, Fig. 1, "Latest" and the side column."""
-    tils, works = content["til"], content["work"]
+def home_page(content, stream, errors):
+    """The homepage: introduction, "Latest", the case-study cards and the side column."""
+    tils, tools = content["til"], content["tool"]
+    works = ordered_case_studies(content["work"], errors)
     counts = {k: sum(1 for e in stream if e.kind == k) for k in STREAM_KINDS}
     published = " · ".join(plural(n, k) for k, n in counts.items() if n)
     newest = max([e.updated for e in stream] or [TODAY])
-    title, href, text = SITE["featured"]
-    facts = [
-        ("Featured", '<a href="%s">%s</a>: %s' % (esc(href), esc(title), esc(text))),
+    facts = []
+    if SITE["featured"]:
+        title, href, text = SITE["featured"]
+        facts.append(("Featured", '<a href="%s">%s</a>: %s' % (esc(href), esc(title), esc(text))))
+    facts += [
         ("Education", esc(SITE["education"])),
         ("Published", esc(published or "Nothing yet")),
         ("Updated", '<time datetime="%s">%s</time>, %s'
@@ -660,7 +628,16 @@ def home_page(content, stream):
     if len(stream) > STREAM_LIMIT:
         older = '<p class="empty">Older entries are on the TIL, Tools and Work pages.</p>'
 
-    # Side column: TIL topics, case studies, feeds.
+    # Case studies: a card for each, under "Latest" (beside it on wide screens comes
+    # the side column).
+    cases = ""
+    if works:
+        cases = ('<section class="cases" aria-labelledby="case-studies">\n'
+                 '<h2 class="cases-title" id="case-studies">Case studies</h2>\n%s\n</section>'
+                 % case_cards(works, errors))
+
+    # Side column: TIL topics, tools, case studies, feeds. The case-study list is
+    # hidden on narrow screens, where the cards sit just above it (site.css).
     side = []
     if tils:
         topics = {}
@@ -670,9 +647,12 @@ def home_page(content, stream):
                         % (t, esc(topic_name(t)), n)
                         for t, n in sorted(topics.items(), key=lambda x: (-x[1], x[0])))
         side.append('<section><h2>TIL topics</h2><ul>%s</ul></section>' % items)
+    if tools:
+        items = "".join('<li><a href="%s">%s</a></li>' % (e.url, esc(e.title)) for e in newest_first(tools))
+        side.append('<section><h2>Tools</h2><ul>%s</ul></section>' % items)
     if works:
-        items = "".join('<li><a href="%s">%s</a></li>' % (e.url, esc(e.title)) for e in newest_first(works))
-        side.append('<section><h2>Case studies</h2><ul>%s</ul></section>' % items)
+        items = "".join('<li><a href="%s">%s</a></li>' % (e.url, esc(e.title)) for e in works)
+        side.append('<section class="side-work"><h2>Work</h2><ul>%s</ul></section>' % items)
     feeds = '<li><a href="feed.xml">Everything</a><span>Atom</span></li>'
     if tils:
         feeds += '<li><a href="til/feed.xml">TIL only</a><span>Atom</span></li>'
@@ -685,7 +665,6 @@ def home_page(content, stream):
 {facts}
 </dl>
 </section>
-{figure}
 <div class="home-cols">
 <section class="stream" id="stream" aria-labelledby="latest">
 <div class="latest-head">
@@ -700,12 +679,13 @@ def home_page(content, stream):
 <ol class="rows" id="results" hidden></ol>
 <p class="empty" id="empty" hidden>No entries match. Try fewer or shorter words.</p>
 </section>
+{cases}
 <aside class="side" aria-label="More">
 {side}
 </aside>
 </div>""".format(role=esc(SITE["role"]), headline=esc(SITE["headline"]), facts=facts_html,
-                 figure=hbm_figure(""), tabs="".join(tabs), months="\n".join(months),
-                 older=older, side="\n".join(side))
+                 tabs="".join(tabs), months="\n".join(months), older=older, cases=cases,
+                 side="\n".join(side))
 
     # For search engines: the site and the person it is about, and the Search
     # Console code (Google looks for it on the homepage only).
@@ -1135,7 +1115,7 @@ def build():
         NAV.append((page.label, page.label, page.url, None))
 
     stream = newest_first([e for k in STREAM_KINDS for e in content[k]])
-    write("index.html", home_page(content, stream))
+    write("index.html", home_page(content, stream, errors))
     if content["til"]:
         til_pages(content["til"])
         atom(content["til"], "til/feed.xml", "%s: TIL" % SITE["name"])

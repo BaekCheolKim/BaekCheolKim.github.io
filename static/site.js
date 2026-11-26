@@ -1,12 +1,10 @@
-// site.js: the homepage's "Latest" filters and search, and Fig. 1.
+// site.js: the homepage's "Latest" filters and search.
 //
 // How to edit:
 // - Search: it loads search.json (written by build.py) on the first keystroke
 //   and shows entries whose title, summary or text contain every typed word.
 // - Type filters: the buttons above "Latest" carry data-kind="til" and so on;
 //   build.py writes them, this file shows and hides the matching rows.
-// - Fig. 1: the constants at the start of the Fig. 1 part must match HBM_MIB,
-//   TOKENS and MODELS in build.py, which draws the figure's first state.
 (function () {
   'use strict';
 
@@ -139,67 +137,5 @@
       });
     });
     if (location.hash === '#search') { q.focus(); stream.scrollIntoView({ block: 'start' }); }
-  }
-
-  // ------------------------------------------------------------ Fig. 1: HBM per GPU
-  // Same constants as build.py, which writes the figure's first state.
-  var fig = $('hbm');
-  if (fig) {
-    var GiB = 1073741824;
-    var HBM = 97871 * 1048576;          // usable HBM per GH200, measured
-    var TOKENS = 8 * 8192;              // 8 sequences of 8,192 tokens
-    var MODELS = {
-      '8b': { params: 8030261248, layers: 32, kvHeads: 8, headDim: 128, tp: 1 },
-      '70b': { params: 70553706496, layers: 80, kvHeads: 8, headDim: 128, tp: 4 },
-      '405b': { params: 405853388800, layers: 126, kvHeads: 8, headDim: 128, tp: 4 }
-    };
-    var STEPS = [10, 20, 25, 50, 100, 200, 250, 500, 1000];
-    var buttons = fig.querySelectorAll('[data-model]');
-    var gib = function (x) { return (x / GiB).toFixed(1); };
-
-    var draw = function (key) {
-      var m = MODELS[key];
-      var w = m.params * 2 / m.tp;                                      // BF16 weights
-      var kv = 2 * m.layers * m.kvHeads * m.headDim * 2 * TOKENS / m.tp; // K and V, BF16
-      var total = w + kv;
-      var axis = Math.max(HBM, total) * 1.04;
-      var pct = function (x) { return (x / axis * 100).toFixed(3) + '%'; };
-      var over = total > HBM;
-
-      $('hbm-w').style.width = pct(w);
-      $('hbm-kv').style.width = pct(kv);
-      var ov = $('hbm-over');
-      ov.hidden = !over;
-      ov.style.left = pct(HBM);
-      ov.style.width = pct(Math.max(0, total - HBM));
-      var cap = $('hbm-cap');
-      cap.style.left = pct(HBM);
-      cap.classList.toggle('flip', HBM / axis > 0.7);
-
-      var step = STEPS.filter(function (s) { return axis / GiB / s <= 5.5; })[0];
-      var ticks = '';
-      for (var v = 0; v * GiB <= axis * 0.97; v += step) ticks += '<span style="left:' + pct(v * GiB) + '">' + v + '</span>';
-      $('hbm-axis').innerHTML = ticks + '<span class="unit">GiB</span>';
-
-      $('hbm-wv').textContent = gib(w);
-      $('hbm-kvv').textContent = gib(kv);
-      $('hbm-fl').textContent = over ? 'Over' : 'Free';
-      $('hbm-fk').className = 'key ' + (over ? 'key-over' : 'key-free');
-      $('hbm-fv').textContent = gib(Math.abs(HBM - total));
-
-      var status = over
-        ? 'Does not fit: ' + gib(total) + ' GiB needed per GPU, ' + gib(HBM) + ' GiB available.' +
-          (w > HBM ? ' Weights alone exceed HBM at TP ' + m.tp + '.' : '')
-        : 'Fits: weights and KV cache take ' + gib(total) + ' GiB of the ' + gib(HBM) + ' GiB per GPU.';
-      var s = $('hbm-status');
-      s.textContent = status;
-      s.classList.toggle('bad', over);
-      $('hbm-track').setAttribute('aria-label', status);
-      each(buttons, function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-model') === key)); });
-    };
-
-    each(buttons, function (b) {
-      b.addEventListener('click', function () { draw(b.getAttribute('data-model')); });
-    });
   }
 })();
